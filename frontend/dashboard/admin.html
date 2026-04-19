@@ -556,6 +556,9 @@
                                 <button onclick="downloadCulturalBookers(${c.id}, '${c.title.replace(/'/g, "\\'")}')" class="px-4 py-3 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 transition-all shadow-sm" title="Download Attendee List">
                                     <i data-lucide="download" class="w-4 h-4"></i>
                                 </button>
+                                <button onclick="deleteCultural(${c.id})" class="px-4 py-3 bg-red-50 text-red-500 rounded-xl hover:bg-red-500 hover:text-white transition-all shadow-sm" title="Delete Cultural">
+                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                </button>
                                 <div class="px-4 py-3 bg-emerald-50 text-emerald-600 rounded-xl font-black text-[9px]">₹${c.price}</div>
                             </div>
                         </div>
@@ -613,6 +616,23 @@
                     alert(data.error);
                 }
             } catch(e) { alert('Update failed'); }
+        }
+
+        async function deleteCultural(id) {
+            if(!confirm('Are you sure you want to delete this cultural event? All bookings will also be deleted.')) return;
+            try {
+                const res = await AuthGuard.secureFetch(`/api/culturals/delete/${id}`, {
+                    method: 'DELETE'
+                });
+                if(res.ok) {
+                    alert('Cultural Unit Deleted Successfully!');
+                    loadCulturals();
+                    loadCulturalBookings();
+                } else {
+                    const data = await res.json();
+                    alert(data.error);
+                }
+            } catch(e) { alert('Delete failed'); }
         }
 
         async function loadCulturalBookings() {

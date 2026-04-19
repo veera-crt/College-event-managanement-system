@@ -253,6 +253,32 @@ def get_cultural_bookings(current_user):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@culturals_bp.route('/delete/<int:cultural_id>', methods=['DELETE'])
+@require_auth(roles=['admin', 'organizer'])
+def delete_cultural(current_user, cultural_id):
+    try:
+        with DatabaseConnection() as conn:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                # Permission check
+                cur.execute("SELECT club_id FROM culturals WHERE id = %s", (cultural_id,))
+                cult = cur.fetchone()
+                if not cult: return jsonify({"error": "Cultural unit not found"}), 404
+                
+                # Check if current user is admin of the same organization or the organizer of the same club
+                # For admin, we should check organization_name/club_id match if we want to be strict, 
+                # but standard practice in this app seems to be global admin or club-based organizer.
+                if current_user['role'] == 'organizer':
+                     cur.execute("SELECT club_id FROM users WHERE id = %s", (int(current_user['sub']),))
+                     user_club = cur.fetchone()
+                     if not user_club or user_club['club_id'] != cult['club_id']:
+                         return jsonify({"error": "Unauthorized"}), 403
+                
+                cur.execute("DELETE FROM culturals WHERE id = %s", (cultural_id,))
+                conn.commit()
+                return jsonify({"message": "Cultural unit deleted successfully"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 @culturals_bp.route('/my-bookings', methods=['GET'])
 @require_auth(roles=['student'])
 def get_my_cultural_bookings(current_user):
