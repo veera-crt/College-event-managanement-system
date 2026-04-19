@@ -98,6 +98,7 @@ def create_tables():
             hall_id INTEGER REFERENCES halls(id) ON DELETE SET NULL,
             attendance_code VARCHAR(10),
             cert_folder_url TEXT,
+            attendance_locked BOOLEAN DEFAULT FALSE,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
         """,
@@ -117,6 +118,8 @@ def create_tables():
             registered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             team_name TEXT,
             leader_id INTEGER REFERENCES users(id),
+            payer_id INTEGER REFERENCES users(id),
+            edit_count INTEGER DEFAULT 0,
             UNIQUE(event_id, student_id)
         );
         """,
