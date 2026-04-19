@@ -364,8 +364,10 @@ def export_cultural_bookings(current_user, cultural_id):
                 wb.save(file_stream)
                 file_stream.seek(0)
                 
-                filename = f"Attendees_{cult['title'].replace(' ', '_')}.xlsx"
-                
+                # Sanitize filename for headers
+                clean_title = "".join(c for c in (cult['title'] or str(cultural_id)) if c.isalnum() or c in (' ', '_')).replace(' ', '_')
+                filename = f"Attendees_{clean_title}_{datetime.now().strftime('%Y%m%d')}.xlsx"
+
                 return send_file(
                     file_stream,
                     mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",

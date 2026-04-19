@@ -688,28 +688,41 @@
 
         async function downloadCulturalBookers(id, title) {
             try {
-                // Using standard fetch since we need the blob/attachment headers clearly
+                Swal.fire({
+                    title: 'Preparing Export',
+                    text: 'Formatting attendee data...',
+                    showConfirmButton: false,
+                    allowOutsideClick: false,
+                    didOpen: () => { Swal.showLoading(); }
+                });
+
                 const res = await AuthGuard.secureFetch(`/api/culturals/export/${id}`, {
                     method: 'GET'
                 });
                 
                 if (!res.ok) {
                     const error = await res.json();
-                    alert(error.error || "Export failed");
-                    return;
+                    throw new Error(error.error || "Export failed");
                 }
 
                 const blob = await res.blob();
+                const fileName = `Attendees_${title.replace(/[^a-z0-9]/gi, '_')}.xlsx`;
+                
                 const url = window.URL.createObjectURL(blob);
                 const a = document.createElement('a');
+                a.style.display = 'none';
                 a.href = url;
-                a.download = `Attendees_${title.replace(/ /g, '_')}.xlsx`;
+                a.download = fileName;
                 document.body.appendChild(a);
                 a.click();
-                window.URL.revokeObjectURL(url);
-                a.remove();
+                
+                setTimeout(() => {
+                    window.URL.revokeObjectURL(url);
+                    a.remove();
+                    Swal.close();
+                }, 100);
             } catch (e) {
-                alert("Download failed: " + e.message);
+                Swal.fire("Export Failed", e.message, "error");
             }
         }
 
@@ -942,15 +955,21 @@
                 if (!res.ok) throw new Error("Export connection failure");
 
                 const blob = await res.blob();
+                const fileName = `Dossier_${title.replace(/[^a-z0-9]/gi, '_')}_${new Date().getTime()}.xlsx`;
+                
                 const url = window.URL.createObjectURL(blob);
                 const a = document.createElement('a');
+                a.style.display = 'none';
                 a.href = url;
-                a.download = `Report_${title.replace(/ /g, '_')}.xlsx`;
+                a.download = fileName;
                 document.body.appendChild(a);
                 a.click();
-                window.URL.revokeObjectURL(url);
-                a.remove();
-                Swal.close();
+                
+                setTimeout(() => {
+                    window.URL.revokeObjectURL(url);
+                    a.remove();
+                    Swal.close();
+                }, 100);
             } catch(e) {
                 console.error(e);
                 Swal.fire('Export Failed', 'Unable to generate intelligence dossier at this time.', 'error');

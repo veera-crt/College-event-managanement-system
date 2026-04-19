@@ -480,7 +480,10 @@ def export_event_report(current_user, event_id):
                 wb.save(file_stream)
                 file_stream.seek(0)
                 
-                filename = f"Report_{str(event['title'] or event['id']).replace(' ', '_')}_{datetime.now().strftime('%Y%m%d')}.xlsx"
+                # Sanitize filename for headers
+                clean_title = "".join(c for c in (event['title'] or str(event_id)) if c.isalnum() or c in (' ', '_')).replace(' ', '_')
+                filename = f"Dossier_{clean_title}_{datetime.now().strftime('%Y%m%d')}.xlsx"
+                
                 return send_file(
                     file_stream,
                     mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
