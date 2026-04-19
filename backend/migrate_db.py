@@ -10,6 +10,9 @@ def migrate_missing_columns():
         ("ALTER TABLE registrations ADD COLUMN IF NOT EXISTS payer_id INTEGER REFERENCES users(id);", "payer_id added to registrations"),
         ("ALTER TABLE registrations ADD COLUMN IF NOT EXISTS edit_count INTEGER DEFAULT 0;", "edit_count added to registrations"),
         
+        # Culturals Table
+        ("ALTER TABLE culturals ADD COLUMN IF NOT EXISTS booking_deadline TIMESTAMP;", "booking_deadline added to culturals"),
+        
         # Ensure certificates unique constraint from full schema
         ("ALTER TABLE certificates DROP CONSTRAINT IF EXISTS certificates_event_id_student_id_key;", "Dropped old certificates constraint"),
         ("ALTER TABLE certificates ADD CONSTRAINT certificates_event_id_student_id_key UNIQUE(event_id, student_id);", "Added unique constraint to certificates")

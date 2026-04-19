@@ -166,6 +166,7 @@ def create_tables():
             total_tickets INTEGER NOT NULL,
             available_tickets INTEGER NOT NULL,
             event_date TIMESTAMP,
+            booking_deadline TIMESTAMP,
             venue TEXT,
             template_id VARCHAR(50) DEFAULT 'classic_purple',
             club_id INTEGER REFERENCES clubs(id),

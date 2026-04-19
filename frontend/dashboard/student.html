@@ -613,6 +613,16 @@
                 const regData = await regRes.json();
                 const cultData = await cultRes.json();
 
+                if (!Array.isArray(regData) || !Array.isArray(cultData)) {
+                    console.error("Failed to load updates: Data format mismatch", { regData, cultData });
+                    list.innerHTML = `
+                        <div class="p-12 text-center bg-white border border-dashed border-red-200 rounded-[2rem]">
+                            <p class="text-red-400 font-bold italic">Critical Error: Database synchronization issue detected. Please contact support.</p>
+                        </div>
+                    `;
+                    return;
+                }
+
                 // 1. Process Registrations
                 const grouped = new Map();
                 regData.forEach(r => {
@@ -985,7 +995,7 @@
                 // Fetch registrations first to show "Registered" status
                 const regRes = await AuthGuard.secureFetch('/api/registrations/my-registrations');
                 const regData = await regRes.json();
-                if(regRes.ok) {
+                if(regRes.ok && Array.isArray(regData)) {
                     // Only mark as REGISTERED if the status is 'approved'
                     registeredEventIds = regData.filter(r => r.status === 'approved').map(r => r.event_id);
                 }
