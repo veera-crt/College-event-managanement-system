@@ -11,10 +11,17 @@ certificates_bp = Blueprint('certificates', __name__)
 
 # Configuration
 UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), '..', 'uploads', 'certificates')
+# Vercel bypass for read-only filesystem
+if os.environ.get('VERCEL') == '1':
+    UPLOAD_FOLDER = '/tmp/uploads/certificates'
+
 ALLOWED_EXTENSIONS = {'pdf'}
 
 if not os.path.exists(UPLOAD_FOLDER):
-    os.makedirs(UPLOAD_FOLDER)
+    try:
+        os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+    except Exception as e:
+        print(f"Warning: Could not create upload directory {UPLOAD_FOLDER}: {e}")
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS

@@ -1,13 +1,20 @@
 from db import execute_query, logger
+import os
 
 def create_tables():
-    """Create the necessary database tables for CampusHub."""
+    """Create the necessary database tables for CampusHub based on the full schema."""
     
-    # Define table creation queries
+    # Define table creation queries in order (matching database_full_schema.sql)
     queries = [
+        # Drop tables in reverse order of foreign keys
         """
+        DROP TABLE IF EXISTS cultural_bookings CASCADE;
+        DROP TABLE IF EXISTS culturals CASCADE;
+        DROP TABLE IF EXISTS certificates CASCADE;
         DROP TABLE IF EXISTS attendance CASCADE;
+        DROP TABLE IF EXISTS registration_members CASCADE;
         DROP TABLE IF EXISTS registrations CASCADE;
+        DROP TABLE IF EXISTS friends CASCADE;
         DROP TABLE IF EXISTS events CASCADE;
         DROP TABLE IF EXISTS users CASCADE;
         DROP TABLE IF EXISTS clubs CASCADE;
@@ -16,6 +23,7 @@ def create_tables():
         DROP TABLE IF EXISTS revoked_tokens CASCADE;
         DROP TABLE IF EXISTS otp_verifications CASCADE;
         """,
+        # Infrastructure
         """
         CREATE TABLE IF NOT EXISTS clubs (
             id SERIAL PRIMARY KEY,
@@ -34,6 +42,7 @@ def create_tables():
             description TEXT
         );
         """,
+        # User Management
         """
         CREATE TABLE IF NOT EXISTS users (
             id SERIAL PRIMARY KEY,
@@ -65,14 +74,7 @@ def create_tables():
             UNIQUE(user_id, friend_id)
         );
         """,
-        """
-        CREATE TABLE IF NOT EXISTS registration_members (
-            id SERIAL PRIMARY KEY,
-            registration_id INTEGER REFERENCES registrations(id) ON DELETE CASCADE,
-            student_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-            UNIQUE(registration_id, student_id)
-        );
-        """,
+        # Event Management
         """
         CREATE TABLE IF NOT EXISTS events (
             id SERIAL PRIMARY KEY,
@@ -95,9 +97,11 @@ def create_tables():
             refreshments JSONB,
             hall_id INTEGER REFERENCES halls(id) ON DELETE SET NULL,
             attendance_code VARCHAR(10),
+            cert_folder_url TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
         """,
+        # Registrations
         """
         CREATE TABLE IF NOT EXISTS registrations (
             id SERIAL PRIMARY KEY,
@@ -111,18 +115,76 @@ def create_tables():
             invoice_url TEXT,
             status VARCHAR(50) DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),
             registered_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            team_name TEXT,
+            leader_id INTEGER REFERENCES users(id),
             UNIQUE(event_id, student_id)
         );
         """,
+        """
+        CREATE TABLE IF NOT EXISTS registration_members (
+            id SERIAL PRIMARY KEY,
+            registration_id INTEGER REFERENCES registrations(id) ON DELETE CASCADE,
+            student_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+            UNIQUE(registration_id, student_id)
+        );
+        """,
+        # Attendance & Certificates
         """
         CREATE TABLE IF NOT EXISTS attendance (
             id SERIAL PRIMARY KEY,
             event_id INTEGER REFERENCES events(id) ON DELETE CASCADE,
             student_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+            manual_present BOOLEAN DEFAULT FALSE,
+            otp_present BOOLEAN DEFAULT FALSE,
+            event_otp VARCHAR(10),
+            otp_sent_at TIMESTAMP,
+            otp_verified_at TIMESTAMP,
             marked_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             UNIQUE(event_id, student_id)
         );
         """,
+        """
+        CREATE TABLE IF NOT EXISTS certificates (
+            id SERIAL PRIMARY KEY,
+            event_id INTEGER REFERENCES events(id) ON DELETE CASCADE,
+            student_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+            file_url TEXT NOT NULL,
+            uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(event_id, student_id)
+        );
+        """,
+        # Cultural Ticketing
+        """
+        CREATE TABLE IF NOT EXISTS culturals (
+            id SERIAL PRIMARY KEY,
+            title TEXT NOT NULL,
+            description TEXT,
+            price DECIMAL(10,2) DEFAULT 0,
+            total_tickets INTEGER NOT NULL,
+            available_tickets INTEGER NOT NULL,
+            event_date TIMESTAMP,
+            venue TEXT,
+            template_id VARCHAR(50) DEFAULT 'classic_purple',
+            club_id INTEGER REFERENCES clubs(id),
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+        """,
+        """
+        CREATE TABLE IF NOT EXISTS cultural_bookings (
+            id SERIAL PRIMARY KEY,
+            cultural_id INTEGER REFERENCES culturals(id) ON DELETE CASCADE,
+            student_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+            status TEXT DEFAULT 'pending',
+            razorpay_order_id TEXT,
+            razorpay_payment_id TEXT,
+            razorpay_signature TEXT,
+            ticket_id VARCHAR(50),
+            amount_paid DECIMAL(10,2),
+            booked_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            CONSTRAINT one_ticket_per_user UNIQUE(cultural_id, student_id)
+        );
+        """,
+        # Auth & Tokens
         """
         CREATE TABLE IF NOT EXISTS refresh_tokens (
             id SERIAL PRIMARY KEY,
@@ -153,8 +215,8 @@ def create_tables():
             UNIQUE(email, role)
         );
         """,
+        # Automation Triggers
         """
-        -- Trigger: Automatically set club_id on event creation based on organizer_id
         CREATE OR REPLACE FUNCTION set_event_club_id()
         RETURNS TRIGGER AS $$
         BEGIN
@@ -174,10 +236,9 @@ def create_tables():
     ]
 
     try:
-        logger.info("Initializing database creation...")
+        logger.info("Initializing database synchronization with production schema...")
         for query in queries:
             execute_query(query, fetch=False)
-            logger.info("Executed query successfully.")
             
         from db import DatabaseConnection
         with DatabaseConnection() as conn:
@@ -234,9 +295,9 @@ def create_tables():
                 
                 conn.commit()
                 
-        logger.info("✅ Database fully initialized with automation triggers and seed data!")
+        logger.info("✅ Neon Database is now synced with the production-ready local schema!")
     except Exception as e:
-        logger.error(f"❌ Failed to create tables: {e}")
+        logger.error(f"❌ Failed to sync Neon database: {e}")
 
 if __name__ == "__main__":
     create_tables()
