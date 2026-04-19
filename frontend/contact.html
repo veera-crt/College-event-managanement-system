@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contact Us - College Event Management System</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#1e3a8a',
+                        secondary: '#3b82f6',
+                        accent: '#ef4444',
+                        background: '#ffffff',
+                        foreground: '#1e293b',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Inter', sans-serif; color: #1e293b; }
+    </style>
+    <script>
+        // Global Session Check: Auto-redirect logged-in users to their dashboard
+        const sessionUser = JSON.parse(localStorage.getItem('user'));
+        if (sessionUser && sessionUser.role) {
+            const dashboardRoutes = { 
+                student: 'dashboard/student.html', 
+                organizer: 'dashboard/organizer.html', 
+                admin: 'dashboard/admin.html' 
+            };
+            window.location.href = dashboardRoutes[sessionUser.role] || 'index.html';
+        }
+    </script>
+</head>
+<body class="bg-white">
+    <!-- Navbar -->
+    <nav class="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-100">
+        <div class="mx-auto flex max-w-[1400px] items-center justify-between px-[7%] py-6">
+            <div class="flex items-center gap-2">
+                <a href="index.html" class="flex items-center gap-2">
+                    <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-white font-black text-xl italic">A</div>
+                    <span class="text-xl font-black tracking-tighter text-primary">CampusHub</span>
+                </a>
+            </div>
+            
+            <div class="hidden items-center gap-10 md:flex">
+                <a href="index.html" class="text-sm font-medium text-gray-500 hover:text-primary transition-colors">Home</a>
+                <a href="index.html#features" class="text-sm font-medium text-gray-500 hover:text-primary transition-colors">Features</a>
+                <a href="contact.html" class="text-sm font-bold text-primary">Contact</a>
+            </div>
+
+            <div class="flex items-center gap-4">
+                <a href="sign-in.html" class="text-sm font-bold text-primary hover:text-secondary transition-colors">Login</a>
+                <a href="sign-up.html" class="rounded-xl bg-primary px-6 py-3 text-sm font-bold text-white shadow-lg shadow-blue-200 hover:bg-secondary transition-all">Sign Up</a>
+            </div>
+        </div>
+    </nav>
+
+    <section class="mx-auto max-w-[1400px] px-[7%] py-40">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-16">
+            <div>
+                <h1 class="text-6xl font-black text-primary mb-8 tracking-tighter">Get in Touch</h1>
+                <p class="text-xl text-gray-500 mb-12 leading-relaxed">
+                    Have questions about our platform or need help organizing an event? Our team is here to support you 24/7.
+                </p>
+
+                <div class="space-y-8">
+                    <div class="flex items-center gap-6">
+                        <div class="bg-blue-50 p-4 rounded-2xl text-blue-600">
+                            <i data-lucide="mail" class="w-8 h-8"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-lg text-primary">Email Us</h4>
+                            <p class="text-gray-500">support@collegeems.edu</p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-6">
+                        <div class="bg-green-50 p-4 rounded-2xl text-green-600">
+                            <i data-lucide="phone" class="w-8 h-8"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-lg text-primary">Call Us</h4>
+                            <p class="text-gray-500">+1 (555) 000-0000</p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-6">
+                        <div class="bg-purple-50 p-4 rounded-2xl text-purple-600">
+                            <i data-lucide="map-pin" class="w-8 h-8"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-lg text-primary">Visit Us</h4>
+                            <p class="text-gray-500">Main Campus, Student Center, Room 404</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-gray-50 p-12 rounded-[2.5rem] border border-gray-100">
+                <form id="contactForm" class="space-y-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="space-y-2">
+                            <label class="text-sm font-bold text-primary uppercase tracking-wider">First Name</label>
+                            <input type="text" required placeholder="John" class="w-full p-4 rounded-xl border-2 border-gray-100 focus:border-secondary outline-none transition-all">
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-sm font-bold text-primary uppercase tracking-wider">Last Name</label>
+                            <input type="text" required placeholder="Doe" class="w-full p-4 rounded-xl border-2 border-gray-100 focus:border-secondary outline-none transition-all">
+                        </div>
+                    </div>
+
+                    <div class="space-y-2">
+                        <label class="text-sm font-bold text-primary uppercase tracking-wider">Email Address</label>
+                        <input type="email" required placeholder="john@example.com" class="w-full p-4 rounded-xl border-2 border-gray-100 focus:border-secondary outline-none transition-all">
+                    </div>
+
+                    <div class="space-y-2">
+                        <label class="text-sm font-bold text-primary uppercase tracking-wider">Message</label>
+                        <textarea required rows="5" placeholder="How can we help you?" class="w-full p-4 rounded-xl border-2 border-gray-100 focus:border-secondary outline-none transition-all resize-none"></textarea>
+                    </div>
+
+                    <button type="submit" class="w-full bg-primary text-white py-5 rounded-xl font-bold text-lg shadow-xl shadow-blue-900/10 hover:bg-secondary transition-all flex items-center justify-center gap-3">
+                        Send Message <i data-lucide="send" class="w-5 h-5"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer snippet -->
+    <footer class="bg-primary text-white py-24">
+        <div class="mx-auto max-w-[1400px] px-[7%] text-center">
+            <p>&copy; 2026 CampusHub - College Event Management System</p>
+        </div>
+    </footer>
+
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        lucide.createIcons();
+        document.getElementById('contactForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            alert('Your message has been sent successfully!');
+            e.target.reset();
+        });
+    </script>
+</body>
+</html>

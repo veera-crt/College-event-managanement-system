@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recover Password - CampusHub</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#1e3a8a',
+                        secondary: '#3b82f6',
+                        accent: '#ef4444',
+                        background: '#ffffff',
+                        foreground: '#1e293b',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-[#F8FAFC]">
+    <!-- Navbar -->
+    <nav class="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-100">
+        <div class="mx-auto flex max-w-[1400px] items-center justify-between px-[7%] py-6">
+            <div class="flex items-center gap-2">
+                <a href="index.html" class="flex items-center gap-2">
+                    <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-white font-black text-xl italic">A</div>
+                    <span class="text-xl font-black tracking-tighter text-primary">CampusHub</span>
+                </a>
+            </div>
+            <div class="flex items-center gap-4">
+                <a href="sign-in.html" class="text-sm font-bold text-primary hover:text-secondary transition-colors">Back to Sign In</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Background elements -->
+    <div class="fixed top-1/4 -left-20 w-96 h-96 bg-blue-100 rounded-full blur-3xl opacity-30 animate-pulse"></div>
+    <div class="fixed bottom-1/4 -right-20 w-96 h-96 bg-indigo-100 rounded-full blur-3xl opacity-30 animate-pulse delay-700"></div>
+
+    <!-- Back Button -->
+    <div class="fixed top-32 left-12 z-50">
+        <a href="sign-in.html" class="flex items-center gap-2 text-indigo-900 font-black text-sm uppercase tracking-widest hover:gap-4 transition-all group">
+            <i data-lucide="arrow-left" class="w-5 h-5 group-hover:-translate-x-1 transition-transform"></i>
+            Go Back
+        </a>
+    </div>
+
+    <div class="flex items-center justify-center min-h-screen py-20 px-8 relative z-10">
+        <div class="bg-white/80 backdrop-blur-xl border border-white rounded-[2.5rem] w-full max-w-4xl shadow-[0_20px_50px_rgba(0,0,0,0.08)] flex flex-col md:flex-row overflow-hidden">
+            <!-- Left Panel -->
+            <div class="md:w-5/12 bg-indigo-900 p-12 text-white flex flex-col justify-between relative overflow-hidden">
+                <div class="relative z-10">
+                    <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10 backdrop-blur-md text-white font-black text-2xl italic mb-8 border border-white/20">A</div>
+                    <h2 class="text-4xl font-black tracking-tighter mb-4 leading-tight">Security simplified.</h2>
+                    <p class="text-indigo-100 font-medium">Verify your identity to regain access to your events and workspace.</p>
+                </div>
+                
+                <div class="relative z-10">
+                     <div class="p-6 bg-white/5 backdrop-blur-md rounded-2xl border border-white/10">
+                        <p class="text-xs font-black uppercase tracking-widest opacity-60 mb-2">Safety Tip</p>
+                        <p class="text-sm">Never share your OTP or recovery codes with anyone, including support staff.</p>
+                     </div>
+                </div>
+
+                <div class="absolute -bottom-20 -left-20 w-64 h-64 bg-indigo-500 rounded-full blur-3xl opacity-50"></div>
+            </div>
+
+            <!-- Right Panel -->
+            <div class="md:w-7/12 p-12 flex flex-col justify-center">
+                <div class="mb-10">
+                    <div id="stageBadge" class="inline-flex items-center gap-2 mb-4 px-4 py-1.5 bg-indigo-50 text-indigo-600 rounded-full text-sm font-bold tracking-tight uppercase">
+                        <i data-lucide="key-round" class="w-4 h-4" id="stageIcon"></i> <span id="stageLabel">Identity Recovery</span>
+                    </div>
+                    <h1 id="stageTitle" class="text-4xl font-black text-indigo-950 mb-2 tracking-tighter">Reset Password</h1>
+                    <p id="stageDesc" class="text-[#64748b] font-medium leading-relaxed">Enter your registered email address below. We'll send you a secure bypass link to reset your credentials.</p>
+                </div>
+
+                <!-- Step 1: Email & Role -->
+                <form id="emailForm" class="space-y-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="space-y-2">
+                            <label class="text-xs font-black text-[#64748b] uppercase tracking-widest px-1">Registered Email</label>
+                            <div class="relative group">
+                                <i data-lucide="mail" class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#94a3b8] group-focus-within:text-indigo-600 transition-colors"></i>
+                                <input type="email" id="email" required placeholder="example@gmail.com" class="w-full pl-10 pr-4 py-4 bg-[#f1f5f9] border-2 border-transparent rounded-[1.25rem] focus:outline-none focus:border-indigo-600 focus:bg-white transition-all text-[#1e293b] font-medium">
+                            </div>
+                        </div>
+
+                        <div class="space-y-2">
+                            <label class="text-xs font-black text-[#64748b] uppercase tracking-widest px-1">Active Role</label>
+                            <div class="relative group">
+                                <i data-lucide="user-circle" class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[#94a3b8] group-focus-within:text-indigo-600 transition-colors"></i>
+                                <select id="userType" required class="w-full pl-10 pr-4 py-4 bg-[#f1f5f9] border-2 border-transparent rounded-[1.25rem] focus:outline-none focus:border-indigo-600 focus:bg-white transition-all text-[#1e293b] font-bold appearance-none cursor-pointer">
+                                    <option value="student">Student Account</option>
+                                    <option value="organizer">Organizer Access</option>
+                                    <option value="admin">Administrator Control</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" id="initBtn" class="w-full py-5 bg-indigo-900 text-white rounded-[1.5rem] font-black text-lg hover:bg-indigo-800 transition-all shadow-xl shadow-indigo-900/10 flex items-center justify-center gap-3">
+                        <span id="initBtnText">Initiate Recovery</span>
+                        <i data-lucide="send" class="w-5 h-5"></i>
+                    </button>
+                </form>
+
+                <!-- Step 2: OTP -->
+                <div id="otpContainer" class="hidden space-y-8 animate-in">
+                    <div class="space-y-4">
+                        <label class="text-xs font-black text-gray-400 uppercase tracking-widest text-center block" id="otpLabel">Enter 6-Digit Code</label>
+                        <div class="flex justify-between gap-3 px-2">
+                            <input type="text" maxlength="6" id="otpCode" placeholder="0 0 0 0 0 0" class="w-full py-6 bg-indigo-50 border-2 border-indigo-200 rounded-[1.5rem] focus:outline-none focus:border-indigo-600 focus:bg-white transition-all text-indigo-900 text-3xl font-black tracking-[0.5em] text-center">
+                        </div>
+                    </div>
+                    <button id="verifyOtpBtn" class="w-full py-5 bg-indigo-600 text-white rounded-[1.5rem] font-black text-lg hover:bg-indigo-500 transition-all shadow-xl shadow-indigo-600/10">Verify Code</button>
+                    <p class="text-center text-sm font-bold text-gray-400">Didn't receive it? <button type="button" onclick="resendRecoveryOtp()" class="text-indigo-600 hover:underline">Resend Code</button></p>
+                </div>
+
+                <!-- Step 3: New Password -->
+                <form id="newPassForm" class="hidden space-y-6 animate-in">
+                    <div class="space-y-4">
+                        <div class="space-y-2">
+                            <label class="text-sm font-black text-[#64748b] uppercase tracking-widest px-1">New Secure Password</label>
+                            <div class="relative group">
+                                <i data-lucide="lock" class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#94a3b8] group-focus-within:text-indigo-600 transition-colors"></i>
+                                <input type="password" id="password" required placeholder="••••••••" class="w-full pl-12 pr-12 py-4 bg-[#f1f5f9] border-2 border-transparent rounded-[1.25rem] focus:outline-none focus:border-indigo-600 focus:bg-white transition-all text-[#1e293b] font-medium">
+                                <button type="button" onclick="togglePasswordVisibility('password', this)" class="absolute right-4 top-1/2 -translate-y-1/2 text-[#94a3b8] hover:text-indigo-600 transition-colors">
+                                    <i data-lucide="eye" class="w-5 h-5"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-sm font-black text-[#64748b] uppercase tracking-widest px-1">Confirm New Password</label>
+                            <div class="relative group">
+                                <i data-lucide="shield-check" class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#94a3b8] group-focus-within:text-indigo-600 transition-colors"></i>
+                                <input type="password" id="confirmPassword" required placeholder="••••••••" class="w-full pl-12 pr-12 py-4 bg-[#f1f5f9] border-2 border-transparent rounded-[1.25rem] focus:outline-none focus:border-indigo-600 focus:bg-white transition-all text-[#1e293b] font-medium">
+                            </div>
+                        </div>
+                    </div>
+                    <button type="submit" class="w-full py-5 bg-indigo-900 text-white rounded-[1.5rem] font-black text-lg hover:bg-indigo-800 transition-all shadow-xl">Complete Reset</button>
+                </form>
+
+                <div class="text-center mt-10">
+                    <p class="text-[#64748b] font-medium text-sm">Remembered it? <a href="sign-in.html" class="text-indigo-600 font-black hover:underline inline-flex items-center gap-1 group">Sign-In instead <i data-lucide="chevron-right" class="w-4 h-4 group-hover:translate-x-1 transition-transform"></i></a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        lucide.createIcons();
+
+        // State variables
+        let recoveryEmail = '';
+        let recoveryRole = '';
+        let verifiedOtp = '';
+
+        const emailForm = document.getElementById('emailForm');
+        const otpContainer = document.getElementById('otpContainer');
+        const newPassForm = document.getElementById('newPassForm');
+        
+        const stageLabel = document.getElementById('stageLabel');
+        const stageTitle = document.getElementById('stageTitle');
+        const stageDesc = document.getElementById('stageDesc');
+
+        function togglePasswordVisibility(inputId, btn) {
+            const input = document.getElementById(inputId);
+            const isPassword = input.type === 'password';
+            input.type = isPassword ? 'text' : 'password';
+            btn.innerHTML = `<i data-lucide="${isPassword ? 'eye-off' : 'eye'}" class="w-5 h-5"></i>`;
+            lucide.createIcons();
+            btn.style.transform = 'translateY(-50%) scale(0.9)';
+            setTimeout(() => btn.style.transform = 'translateY(-50%) scale(1)', 100);
+        }
+
+        emailForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const role = document.getElementById('userType').value;
+            const btn = document.getElementById('initBtn');
+            const originalText = btn.innerHTML;
+
+            btn.disabled = true;
+            btn.innerHTML = 'Analyzing...';
+
+            try {
+                const res = await fetch('/api/recover/send-otp', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ email, userType: role })
+                });
+                const data = await res.json();
+                
+                if(!res.ok) throw new Error(data.error);
+
+                recoveryEmail = email;
+                recoveryRole = role;
+
+                emailForm.classList.add('hidden');
+                otpContainer.classList.remove('hidden');
+                
+                stageLabel.textContent = "Identity Verification";
+                stageTitle.textContent = "Check Your Inbox";
+                stageDesc.textContent = `A verification code was sent to ${email}. Please enter it below to confirm your ownership of the ${role} account.`;
+                lucide.createIcons();
+
+            } catch (err) {
+                alert(err.message);
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            }
+        });
+
+        document.getElementById('verifyOtpBtn').addEventListener('click', async () => {
+            const otpCode = document.getElementById('otpCode').value;
+            const btn = document.getElementById('verifyOtpBtn');
+            btn.disabled = true;
+
+            try {
+                const res = await fetch('/api/recover/verify-otp', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ email: recoveryEmail, userType: recoveryRole, otp: otpCode })
+                });
+                const data = await res.json();
+                
+                if(!res.ok) throw new Error(data.error);
+
+                verifiedOtp = otpCode;
+                otpContainer.classList.add('hidden');
+                newPassForm.classList.remove('hidden');
+                
+                stageLabel.textContent = "Account Hardening";
+                stageTitle.textContent = "New Access Credentials";
+                stageDesc.textContent = "Verification successful! Create a new, highly secure password to finalize the recovery process.";
+                lucide.createIcons();
+
+            } catch (err) {
+                alert(err.message);
+                btn.disabled = false;
+            }
+        });
+
+        newPassForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const newPassword = document.getElementById('password').value;
+            const confirmPass = document.getElementById('confirmPassword').value;
+
+            if(newPassword !== confirmPass) return alert('Passwords do not match!');
+            if(newPassword.length < 8) return alert('Choose a safer password (min 8 chars).');
+
+            try {
+                const res = await fetch('/api/recover/reset', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ 
+                        email: recoveryEmail, 
+                        userType: recoveryRole, 
+                        otp: verifiedOtp,
+                        newPassword: newPassword
+                    })
+                });
+                const data = await res.json();
+                
+                if(!res.ok) throw new Error(data.error);
+
+                alert(data.message);
+                window.location.href = 'sign-in.html';
+
+            } catch (err) {
+                alert(err.message);
+            }
+        });
+
+        async function resendRecoveryOtp() {
+            try {
+                const res = await fetch('/api/recover/send-otp', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ email: recoveryEmail, userType: recoveryRole })
+                });
+                if(res.ok) alert("Fresh verification code dispatched!");
+                else alert("Dispatch failed. Please wait a minute.");
+            } catch (e) { alert("Network failure"); }
+        }
+    </script>
+</body>
+</html>
+
+</body>
+</html>
+</body>
+</html>

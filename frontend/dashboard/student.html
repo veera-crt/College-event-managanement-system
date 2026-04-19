@@ -1,0 +1,1810 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="/js/auth-check.js"></script>
+    <script>AuthGuard.requireAuth(['student']);</script>
+    <title>Student Dashboard - College Event Management System</title>
+    <link rel="icon" type="image/svg+xml" href="../favicon.svg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#1e3a8a',
+                        secondary: '#3b82f6',
+                        accent: '#ef4444',
+                        background: '#f8fafc',
+                        foreground: '#1e293b',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        .animate-in { animation: fadeIn 0.3s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        body { font-family: 'Inter', sans-serif; }
+        .glass-sheen {
+            position: relative;
+            overflow: hidden;
+        }
+        .glass-sheen::after {
+            content: "";
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(135deg, transparent 40%, rgba(255,255,255,0.4) 50%, transparent 60%);
+            transform: rotate(15deg) translate(-100%, -100%);
+            transition: transform 3s cubic-bezier(0.19, 1, 0.22, 1);
+            pointer-events: none;
+            z-index: 20;
+        }
+        .glass-sheen:hover::after {
+            transform: rotate(15deg) translate(100%, 100%);
+        }
+        .filter-pill.active {
+            background: #2563eb !important;
+            color: white !important;
+            border-color: #2563eb !important;
+            box-shadow: 0 10px 20px -5px rgba(37, 99, 235, 0.4);
+        }
+        @keyframes glow-pulse {
+            0% { box-shadow: 0 0 0 0 rgba(79, 70, 229, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(79, 70, 229, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(79, 70, 229, 0); }
+        }
+        .glow-pulse {
+            animation: glow-pulse 2s infinite;
+        }
+    </style>
+</head>
+<body class="bg-[#f8fafc] text-[#1e293b]">
+    <div class="grid min-h-screen grid-cols-[280px_1fr]">
+        <!-- Sidebar -->
+        <aside class="flex flex-col border-r border-[#e2e8f0] bg-white p-8">
+            <div class="mb-12 flex items-center gap-3">
+                <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-white font-black text-xl italic shadow-lg shadow-blue-200">A</div>
+                <span class="text-xl font-black tracking-tighter text-primary">STUDENT HUB</span>
+            </div>
+
+            <nav class="flex-1 space-y-2">
+                <button onclick="showSection('updates')" data-section="updates" class="nav-btn flex w-full items-center gap-4 rounded-xl px-5 py-4 text-sm font-bold transition-all border-l-4 border-transparent hover:bg-gray-50 hover:text-primary">
+                    <i data-lucide="bell" class="h-5 w-5"></i> Updates
+                </button>
+                <button onclick="showSection('events')" data-section="events" class="nav-btn flex w-full items-center gap-4 rounded-xl px-5 py-4 text-sm font-bold transition-all border-l-4 border-transparent hover:bg-gray-50 hover:text-primary">
+                    <i data-lucide="calendar" class="h-5 w-5"></i> Events
+                </button>
+                <button onclick="showSection('culturals')" data-section="culturals" class="nav-btn flex w-full items-center gap-4 rounded-xl px-5 py-4 text-sm font-bold transition-all border-l-4 border-transparent hover:bg-gray-50 hover:text-primary">
+                    <i data-lucide="music" class="h-5 w-5"></i> Culturals
+                </button>
+                <button onclick="showSection('friends')" data-section="friends" class="nav-btn relative flex w-full items-center gap-4 rounded-xl px-5 py-4 text-sm font-bold transition-all border-l-4 border-transparent hover:bg-gray-50 hover:text-primary">
+                    <i data-lucide="users" class="h-5 w-5"></i> Friends
+                    <span id="friendBadge" class="hidden absolute right-4 h-5 w-5 bg-red-500 text-white text-[10px] flex items-center justify-center rounded-full border-2 border-white font-black">0</span>
+                </button>
+                <button onclick="showSection('certificates')" data-section="certificates" class="nav-btn flex w-full items-center gap-4 rounded-xl px-5 py-4 text-sm font-bold transition-all border-l-4 border-transparent hover:bg-gray-50 hover:text-primary">
+                    <i data-lucide="award" class="h-5 w-5"></i> Certificates
+                </button>
+            </nav>
+
+            <div class="mt-auto pt-8 border-t border-gray-100">
+                <button onclick="logout()" class="flex w-full items-center gap-4 px-5 py-3 text-sm font-bold text-red-500 hover:text-red-600 transition-colors">
+                    <i data-lucide="log-out" class="h-5 w-5"></i> Sign Out
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="p-12 overflow-y-auto w-full relative">
+            <!-- Profile Completion Overlay (Hidden by default) -->
+            <div id="profileOverlay" class="hidden fixed inset-0 z-[100] flex items-center justify-center bg-[#0f172a]/95 backdrop-blur-md p-6">
+                <div class="bg-white rounded-[2.5rem] p-12 max-w-lg w-full shadow-2xl text-center border border-white">
+                    <div class="mb-8 inline-flex h-20 w-20 items-center justify-center rounded-3xl bg-amber-50 text-amber-600 ring-8 ring-amber-50/50">
+                        <i data-lucide="user" class="h-10 w-10"></i>
+                    </div>
+                    <h2 class="text-4xl font-black text-[#1e3a8a] mb-4 tracking-tight">Profile Incomplete!</h2>
+                    <p class="text-[#64748b] text-lg font-medium mb-10 leading-relaxed">
+                        To access your workspace and register for events, you must first complete your profile details.
+                    </p>
+                    <div class="flex flex-col gap-4">
+                        <a href="student-profile.html" class="w-full py-5 bg-[#1e3a8a] text-white rounded-2xl font-black text-lg hover:bg-[#1e40af] transition-all shadow-xl shadow-blue-900/20 flex items-center justify-center gap-3">
+                            Complete Profile Now <i data-lucide="arrow-right" class="h-5 w-5"></i>
+                        </a>
+                        <button onclick="logout()" class="text-sm font-bold text-[#94a3b8] hover:text-[#f87171] transition-colors">Sign out and return later</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Header -->
+            <header class="mb-12 flex items-center justify-between">
+                <div>
+                    <h1 class="text-4xl font-black text-primary tracking-tight">Hello, <span id="userName">User</span></h1>
+                    <p class="text-gray-500 font-bold uppercase tracking-widest text-xs mt-1" id="userRole">STUDENT</p>
+                </div>
+                <div class="flex items-center gap-6">
+                    <button class="relative h-12 w-12 rounded-xl bg-white border border-gray-100 flex items-center justify-center text-gray-500 hover:text-primary transition-colors hover:shadow-lg">
+                        <i data-lucide="bell" class="h-6 w-6"></i>
+                        <span class="absolute top-3 right-3 h-2 w-2 rounded-full bg-red-500 ring-4 ring-white"></span>
+                    </button>
+                    <a href="student-profile.html" class="h-14 w-14 rounded-2xl bg-indigo-50 border-2 border-white flex items-center justify-center text-primary font-black shadow-xl">
+                        <i data-lucide="user" class="h-7 w-7"></i>
+                    </a>
+                </div>
+            </header>
+
+            <!-- Updates Section -->
+            <div id="updates" class="section animate-in">
+                <div class="flex flex-col gap-6">
+                    <div class="flex items-center justify-between">
+                        <h2 class="text-2xl font-black text-primary tracking-tighter">Recent Activity</h2>
+                        <button onclick="loadUpdates()" class="p-2 hover:bg-slate-100 rounded-lg transition-all text-slate-400"><i data-lucide="refresh-cw" class="w-4 h-4"></i></button>
+                    </div>
+                    <div id="updatesList" class="grid grid-cols-1 gap-4">
+                        <!-- Populated by JS -->
+                        <div class="p-8 text-center bg-white border border-slate-100 rounded-[2rem]">
+                            <p class="text-slate-400 font-bold italic">Checking for recent mission logs...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="events" class="section hidden animate-in">
+                <!-- Advanced Filter Suite -->
+                <div class="mb-10 flex flex-wrap items-center gap-3">
+                    <button onclick="filterEvents('all')" class="filter-pill active px-6 py-2.5 rounded-full bg-white border border-slate-200 text-xs font-black uppercase tracking-widest shadow-sm transition-all hover:bg-slate-50">All Events</button>
+                    <button onclick="filterEvents('hackathon')" class="filter-pill px-6 py-2.5 rounded-full bg-white border border-slate-200 text-xs font-black uppercase tracking-widest shadow-sm transition-all hover:bg-slate-50">Hackathons</button>
+                    <button onclick="filterEvents('ideathon')" class="filter-pill px-6 py-2.5 rounded-full bg-white border border-slate-200 text-xs font-black uppercase tracking-widest shadow-sm transition-all hover:bg-slate-50">Ideathons</button>
+                    <button onclick="filterEvents('conference')" class="filter-pill px-6 py-2.5 rounded-full bg-white border border-slate-200 text-xs font-black uppercase tracking-widest shadow-sm transition-all hover:bg-slate-50">Conferences</button>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8" id="eventsGrid">
+                    <!-- Events will be loaded dynamically -->
+                </div>
+                <div id="noEvents" class="py-20 text-center text-gray-400 font-bold italic">
+                    <i data-lucide="calendar" class="h-10 w-10 mx-auto mb-4 opacity-20"></i>
+                    No events registered yet. Browse some in the sidebar!
+                </div>
+            </div>
+
+            <!-- Other sections go here (friends, culturals, etc) -->
+        <!-- Friends Section -->
+        <div id="friends" class="section hidden animate-in">
+             <div class="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
+                <div>
+                    <h2 class="text-3xl font-black text-primary tracking-tighter mb-2">My Network</h2>
+                    <p class="text-gray-400 font-bold text-xs uppercase tracking-widest flex items-center gap-2">
+                        <i data-lucide="users" class="w-4 h-4 text-blue-500"></i>
+                        Campus Connections & Requests
+                    </p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <!-- Search & Discovery -->
+                <div class="lg:col-span-2 space-y-6">
+                    <div class="bg-white rounded-[2rem] p-8 border border-slate-200 shadow-sm">
+                        <h3 class="text-sm font-black text-slate-900 uppercase tracking-widest mb-6 flex items-center gap-2">
+                            <i data-lucide="search" class="w-4 h-4 text-primary"></i> 
+                            Find Students
+                        </h3>
+                        <div class="relative group">
+                            <input type="text" id="userSearchInput" onkeyup="searchUsers(this.value)" placeholder="Search by name or registration number..." class="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl p-5 pl-14 outline-none focus:border-primary focus:bg-white transition-all font-bold text-slate-700">
+                            <i data-lucide="search" class="absolute left-6 top-6 h-5 w-5 text-slate-300 group-focus-within:text-primary transition-colors"></i>
+                        </div>
+                        <div id="searchResults" class="mt-6 space-y-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                            <!-- Search results populated here -->
+                            <p class="text-center text-slate-400 py-10 font-bold italic text-sm">Type to begin searching the campus directory.</p>
+                        </div>
+                    </div>
+
+                    <!-- Friends List -->
+                    <div class="bg-white rounded-[2rem] p-8 border border-slate-200 shadow-sm">
+                        <h3 class="text-sm font-black text-slate-900 uppercase tracking-widest mb-6 flex items-center gap-2">
+                            <i data-lucide="heart" class="w-4 h-4 text-pink-500"></i> 
+                            My Friends
+                        </h3>
+                        <div id="friendsList" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <!-- Friends populated here -->
+                            <p class="col-span-full text-center text-slate-400 py-10 font-bold italic text-sm italic">You haven't added any friends yet.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Inbox / Requests -->
+                <div class="space-y-6">
+                    <!-- Incoming -->
+                    <div class="bg-indigo-900 rounded-[2rem] p-8 text-white shadow-xl shadow-indigo-900/20">
+                        <h3 class="text-xs font-black uppercase tracking-widest mb-6 flex items-center gap-2 opacity-60">
+                            <i data-lucide="mail" class="w-4 h-4"></i> 
+                            Friend Invitations
+                        </h3>
+                        <div id="requestsList" class="space-y-4">
+                            <!-- Incoming requests populated here -->
+                            <div class="py-10 text-center opacity-40 italic font-bold text-sm">No pending requests</div>
+                        </div>
+                    </div>
+
+                    <!-- Outgoing -->
+                    <div class="bg-white rounded-[2rem] p-8 border border-slate-200 shadow-sm">
+                        <h3 class="text-xs font-black uppercase tracking-widest mb-6 flex items-center gap-2 text-slate-400">
+                            <i data-lucide="send" class="w-4 h-4"></i> 
+                            Outgoing Requests
+                        </h3>
+                        <div id="sentRequestsList" class="space-y-4">
+                            <!-- Outgoing requests populated here -->
+                            <div class="py-10 text-center text-slate-300 italic font-bold text-[10px] uppercase tracking-widest">No sent requests</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Culturals Section -->
+        <div id="culturals" class="section hidden animate-in">
+             <div class="mb-10">
+                <h2 class="text-3xl font-black text-primary tracking-tighter mb-2">Cultural Admissions</h2>
+                <p class="text-gray-400 font-bold text-xs uppercase tracking-widest flex items-center gap-2">
+                    <i data-lucide="music" class="w-4 h-4 text-purple-500"></i>
+                    Book your tickets for campus cultural events
+                </p>
+            </div>
+
+            <div id="cultGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- Cultural units will be loaded dynamically -->
+                <div class="col-span-full py-20 text-center text-gray-400 font-bold italic">
+                    <i data-lucide="music" class="h-10 w-10 mx-auto mb-4 opacity-20"></i>
+                    Syncing admission records...
+                </div>
+            </div>
+        </div>
+
+        <!-- Certificates Section -->
+        <div id="certificates" class="section hidden animate-in">
+             <div class="mb-10">
+                <h2 class="text-3xl font-black text-primary tracking-tighter mb-2">Academic Awards</h2>
+                <p class="text-gray-400 font-bold text-xs uppercase tracking-widest flex items-center gap-2">
+                    <i data-lucide="award" class="w-4 h-4 text-emerald-500"></i>
+                    Verify and download your digital event certificates
+                </p>
+            </div>
+
+            <div id="certsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- Certificates will be rendered here -->
+            </div>
+            
+            <div id="certsEmptyState" class="hidden py-24 text-center">
+                <div class="w-20 h-20 bg-slate-50 rounded-[2.5rem] flex items-center justify-center mx-auto mb-8 shadow-inner">
+                    <i data-lucide="award" class="w-10 h-10 text-slate-200"></i>
+                </div>
+                <h3 class="text-xl font-black text-slate-900 mb-2 tracking-tight">No Certificates Found</h3>
+                <p class="text-slate-400 font-bold text-xs uppercase tracking-widest max-w-[240px] mx-auto italic">Complete missions to earn your digital honors!</p>
+            </div>
+        </div>
+
+        <!-- Registration Card (Modal Refactored) -->
+        <div id="regModal" class="hidden fixed inset-0 z-[110] flex items-center justify-center bg-[#0f172a]/80 backdrop-blur-md p-4">
+            <div class="w-full max-w-lg rounded-[2rem] bg-white shadow-2xl animate-in overflow-hidden border border-white max-h-[90vh] flex flex-col">
+                <div class="bg-slate-900 p-8 text-white relative shrink-0">
+                    <button onclick="closeModal()" class="absolute top-6 right-6 h-8 w-8 flex items-center justify-center rounded-lg bg-white/10 hover:bg-white/20 transition-all">
+                        <i data-lucide="x" class="w-4 h-4"></i>
+                    </button>
+                    <div class="flex items-center gap-3 mb-3">
+                        <span class="px-2 py-0.5 bg-blue-500 rounded text-[7px] font-black uppercase tracking-widest">Team Registration</span>
+                        <span id="regEventPrice" class="text-[10px] font-black text-blue-300 italic">Free Event</span>
+                    </div>
+                    <h2 id="regEventTitle" class="text-2xl font-black tracking-tighter">Event Name</h2>
+                    <p id="regEventHall" class="text-blue-400/60 font-bold text-[10px] mt-1 uppercase tracking-widest">Venue Details</p>
+                    
+                    <div class="mt-4 flex items-center gap-6">
+                         <div class="flex items-center gap-2">
+                             <i data-lucide="calendar" class="w-3 h-3 text-blue-400"></i>
+                             <p id="regEventDate" class="text-[9px] font-black text-slate-300 uppercase tracking-tighter">Apr 19, 2026</p>
+                         </div>
+                         <div class="flex items-center gap-2">
+                             <i data-lucide="clock" class="w-3 h-3 text-blue-400"></i>
+                             <p id="regEventTime" class="text-[9px] font-black text-slate-300 uppercase tracking-tighter">10:00 AM</p>
+                         </div>
+                    </div>
+                </div>
+
+                <div class="p-8 space-y-6 overflow-y-auto custom-scrollbar flex-1">
+                    <!-- Team Size Selector -->
+                    <div id="teamSizeControl" class="space-y-4">
+                        <div class="flex justify-between items-center">
+                            <label class="text-[10px] font-black uppercase text-slate-400 tracking-widest">Step 1: Set Team Size</label>
+                            <span id="teamSizeRange" class="text-[10px] font-black text-primary px-3 py-1 bg-blue-50 rounded-full border border-blue-100">Range: 1-3</span>
+                        </div>
+                        <div class="flex gap-3" id="teamSizeButtons">
+                            <!-- JS will inject buttons based on min/max -->
+                        </div>
+                    </div>
+
+                    <!-- Step 3: Team Name (Optional but suggested for grouping) -->
+                    <div id="teamNameControl" class="space-y-3">
+                        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Assign a Team Name</label>
+                        <input type="text" id="teamNameInput" placeholder="e.g. Pixel Pioneers" class="w-full px-5 py-4 bg-slate-50 border border-slate-100 rounded-2xl font-bold text-slate-900 outline-none focus:border-primary transition-all">
+                    </div>
+
+                    <!-- Member Selection -->
+                    <div class="space-y-4">
+                        <label class="text-[10px] font-black uppercase text-slate-400 tracking-widest">Step 2: Add Your Friends</label>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="selectedMembers">
+                            <!-- Me and other added friends -->
+                        </div>
+                        
+                        <div class="relative mt-4">
+                            <div class="flex items-center gap-3 p-4 bg-slate-50 border-2 border-slate-100 rounded-2xl group focus-within:border-primary transition-all">
+                                <i data-lucide="search" class="w-5 h-5 text-slate-300"></i>
+                                <input type="text" id="teamFriendSearch" onkeyup="searchFriendsForTeam(this.value)" placeholder="Search your accepted friends list..." class="flex-1 bg-transparent outline-none font-bold text-sm text-slate-700">
+                            </div>
+                            <div id="teamSearchResults" class="absolute z-10 top-full left-0 right-0 mt-2 bg-white border border-slate-200 rounded-2xl shadow-xl hidden max-h-[200px] overflow-y-auto">
+                                <!-- Friend search results -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Action -->
+                    <div id="leaderTransferSection" class="hidden p-6 bg-amber-50 rounded-2xl border border-amber-100 space-y-3">
+                        <div class="flex items-center gap-2">
+                            <i data-lucide="award" class="w-4 h-4 text-amber-600"></i>
+                            <span class="text-[10px] font-black text-amber-900 uppercase tracking-widest">Handover Mission Lead</span>
+                        </div>
+                        <p class="text-[9px] font-bold text-amber-700/60 leading-relaxed italic uppercase tracking-tighter">Two-time editing available. One-time handover. You will lose management access once transferred.</p>
+                        <select id="newLeaderSelect" class="w-full bg-white border border-amber-200 rounded-xl px-4 py-3 font-bold text-primary text-xs outline-none focus:ring-2 ring-primary/10 transition-all">
+                            <option value="">Keep Current Lead (You)</option>
+                        </select>
+                    </div>
+
+                    <div class="pt-6 border-t border-slate-100 flex flex-col gap-4">
+                        <div id="regPolicyWarning" class="hidden p-4 bg-amber-50 border border-amber-100 rounded-2xl flex items-center gap-3 text-amber-700">
+                            <i data-lucide="alert-circle" class="w-5 h-5 shrink-0"></i>
+                            <p class="text-[10px] font-bold leading-relaxed uppercase tracking-widest">Policy Restriction: 1 Female participant is mandatory for this event.</p>
+                        </div>
+                        <button onclick="submitTeamRegistration()" id="submitRegBtn" class="w-full py-5 bg-primary text-white rounded-[1.5rem] font-black text-sm uppercase tracking-widest hover:bg-blue-800 transition-all shadow-xl shadow-blue-900/10 flex items-center justify-center gap-3">
+                            Complete Mission <i data-lucide="chevron-right" class="w-5 h-5"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        lucide.createIcons();
+
+        // Global state initialization
+        let allEventsData = [];
+        let registeredEventIds = [];
+        let myCertificates = [];
+
+        // Section switching logic with persistence
+        function showSection(sectionId) {
+            // Save state
+            localStorage.setItem('activeStudentSection', sectionId);
+
+            document.querySelectorAll('.section').forEach(s => s.classList.add('hidden'));
+            const targetSection = document.getElementById(sectionId);
+            if(targetSection) {
+                targetSection.classList.remove('hidden');
+            }
+
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('bg-blue-50', 'text-primary', 'border-primary');
+                if(btn.dataset.section === sectionId) {
+                    btn.classList.add('bg-blue-50', 'text-primary', 'border-primary');
+                }
+            });
+
+            // Trigger data loads
+            if(sectionId === 'events') loadEvents();
+            if(sectionId === 'culturals') loadCulturals();
+            if(sectionId === 'friends') loadFriends();
+            if(sectionId === 'updates') loadUpdates();
+            if(sectionId === 'certificates') loadCertificates(); // Dedicated async fetch
+        }
+
+        function toggleCulturalDetails(id) {
+            const panel = document.getElementById(`details-cult-${id}`);
+            const icon = document.getElementById(`icon-cult-${id}`);
+            const isHidden = panel.classList.contains('hidden');
+            
+            if(isHidden) {
+                panel.classList.remove('hidden');
+                icon.style.transform = 'rotate(180deg)';
+                
+                // Generate QR Code if container is empty
+                const container = document.getElementById(`qr-container-${id}`);
+                if (container.children.length <= 1) { // Only icon or empty
+                    container.innerHTML = ''; // Clear icon
+                    const data = document.getElementById(`qr-data-${id}`).value;
+                    new QRCode(container, {
+                        text: data,
+                        width: 64,
+                        height: 64,
+                        colorDark : "#581c87",
+                        colorLight : "#ffffff",
+                        correctLevel : QRCode.CorrectLevel.H
+                    });
+                }
+            } else {
+                panel.classList.add('hidden');
+                icon.style.transform = 'rotate(0deg)';
+            }
+        }
+
+        async function loadCulturals() {
+            const grid = document.getElementById('cultGrid');
+            try {
+                const res = await AuthGuard.secureFetch('/api/culturals/list');
+                const data = await res.json();
+                if(res.ok) {
+                    if(data.length === 0) {
+                        grid.innerHTML = '<div class="col-span-full py-20 text-center text-slate-400 font-bold italic italic">No cultural admissions active at the moment.</div>';
+                        return;
+                    }
+                    const now = new Date();
+                    grid.innerHTML = data.map(c => {
+                        const deadline = new Date(c.booking_deadline);
+                        const isExpired = now > deadline;
+                        return `
+                        <div class="bg-white rounded-[2rem] border border-slate-100 p-8 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all group flex flex-col justify-between">
+                            <div>
+                                <div class="flex justify-between items-start mb-6">
+                                    <div class="h-14 w-14 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center font-black text-xl shadow-inner group-hover:bg-purple-600 group-hover:text-white transition-all">
+                                        <i data-lucide="music" class="w-6 h-6"></i>
+                                    </div>
+                                    <div class="text-right">
+                                        <p class="text-[10px] font-black ${isExpired ? 'text-red-500' : (c.available_tickets > 0 ? 'text-emerald-500' : 'text-slate-400')} uppercase tracking-widest">
+                                            ${isExpired ? 'Registration Closed' : (c.available_tickets > 0 ? 'Admissions Open' : 'Sold Out')}
+                                        </p>
+                                        <p class="text-[9px] font-bold text-slate-400 mt-1">${c.available_tickets} / ${c.total_tickets} Tickets Left</p>
+                                    </div>
+                                </div>
+                                <h3 class="text-xl font-black text-slate-900 mb-2 leading-tight">${c.title}</h3>
+                                <p class="text-[10px] font-black text-primary uppercase tracking-[0.2em] mb-4">${c.club_name}</p>
+                                
+                                <div class="space-y-3 mb-8">
+                                    <div class="flex items-center gap-3 text-xs font-bold text-slate-500">
+                                        <i data-lucide="map-pin" class="w-4 h-4 text-slate-300"></i>
+                                        <span>${c.venue}</span>
+                                    </div>
+                                    <div class="flex items-center gap-3 text-xs font-bold text-slate-500">
+                                        <i data-lucide="calendar" class="w-4 h-4 text-slate-300"></i>
+                                        <span>${new Date(c.event_date).toLocaleString([], {day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit'})}</span>
+                                    </div>
+                                    <div class="flex items-center gap-3 text-xs font-bold ${isExpired ? 'text-red-400' : 'text-amber-500'}">
+                                        <i data-lucide="alert-circle" class="w-4 h-4"></i>
+                                        <span>Deadline: ${deadline.toLocaleString([], {day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit'})}</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="pt-6 border-t border-slate-50 flex items-center justify-between">
+                                <div>
+                                    <p class="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Ticket Price</p>
+                                    <p class="text-lg font-black text-slate-900">${c.price > 0 ? '₹' + c.price : 'FREE'}</p>
+                                </div>
+                                 ${c.user_booked ? `
+                                    <button disabled 
+                                        class="px-6 py-3 bg-green-50 text-green-600 rounded-xl font-black text-[10px] uppercase tracking-widest border border-green-100 italic">
+                                        Admission Secured
+                                    </button>
+                                 ` : `
+                                    <button onclick="bookCulturalTicket(${c.id}, ${c.price})" 
+                                        class="px-6 py-3 ${(!isExpired && c.available_tickets > 0) ? 'bg-primary hover:bg-black' : 'bg-slate-200 cursor-not-allowed'} text-white rounded-xl font-black text-[10px] uppercase tracking-widest transition-all shadow-lg shadow-blue-900/10"
+                                        ${(!isExpired && c.available_tickets > 0) ? '' : 'disabled'}>
+                                        ${isExpired ? 'Closed' : 'Book Ticket'}
+                                    </button>
+                                 `}
+                             </div>
+                         </div>
+                    `}).join('');
+                    lucide.createIcons();
+                }
+            } catch(e) { console.error(e); }
+        }
+
+        async function bookCulturalTicket(id, price) {
+            Swal.fire({
+                title: 'Confirm Admission',
+                text: `Register for one ticket at ${price > 0 ? '₹' + price : 'FREE'}?`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#1e3a8a',
+                confirmButtonText: 'Yes, Book it!'
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    try {
+                        const res = await AuthGuard.secureFetch('/api/culturals/book', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ cultural_id: id })
+                        });
+                        const data = await res.json();
+                        
+                        if(res.ok) {
+                            if(data.type === 'paid') {
+                                const options = {
+                                    key: data.key,
+                                    amount: data.amount * 100,
+                                    currency: "INR",
+                                    name: "CampusHub Culturals",
+                                    order_id: data.order_id,
+                                    handler: async (response) => {
+                                        const vRes = await AuthGuard.secureFetch('/api/culturals/verify-booking', {
+                                            method: 'POST',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify({
+                                                razorpay_order_id: response.razorpay_order_id,
+                                                razorpay_payment_id: response.razorpay_payment_id,
+                                                razorpay_signature: response.razorpay_signature
+                                            })
+                                        });
+                                        if(vRes.ok) {
+                                            Swal.fire('Confirmed!', 'Ticket booked. Check your email.', 'success');
+                                            loadCulturals();
+                                            loadUpdates();
+                                        }
+                                    }
+                                };
+                                new Razorpay(options).open();
+                            } else {
+                                Swal.fire('Confirmed!', data.message, 'success');
+                                loadCulturals();
+                                loadUpdates();
+                            }
+                        } else {
+                            Swal.fire('Hold on!', data.error, 'error');
+                        }
+                    } catch(e) { Swal.fire('Error', 'Connection failed', 'error'); }
+                }
+            });
+        }
+
+        async function submitPresenceOTP(eventId, otp) {
+            if(!otp) return Swal.fire('Wait!', 'Please enter the verification code.', 'warning');
+            
+            try {
+                const res = await AuthGuard.secureFetch('/api/attendance/verify-otp', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ event_id: eventId, otp: otp })
+                });
+                const data = await res.json();
+                
+                if(res.ok) {
+                    Swal.fire({
+                        title: 'Presence Verified!',
+                        text: data.message,
+                        icon: 'success',
+                        confirmButtonColor: '#1e3a8a'
+                    });
+                    loadUpdates(); // Refresh view
+                } else {
+                    Swal.fire('Error', data.error, 'error');
+                }
+            } catch(e) { console.error(e); }
+        }
+
+        let allActivityData = [];
+        async function loadUpdates() {
+            const list = document.getElementById('updatesList');
+            try {
+                // Fetch both event registrations and cultural bookings
+                const [regRes, cultRes] = await Promise.all([
+                    AuthGuard.secureFetch('/api/registrations/my-registrations'),
+                    AuthGuard.secureFetch('/api/culturals/my-bookings')
+                ]);
+                
+                const regData = await regRes.json();
+                const cultData = await cultRes.json();
+
+                // 1. Process Registrations
+                const grouped = new Map();
+                regData.forEach(r => {
+                    const key = `${r.event_id}-|-${r.team_name || 'Individual'}`;
+                    if(!grouped.has(key)) {
+                        grouped.set(key, { ...r, members: [...(r.members || [])], type: 'registration' });
+                    } else {
+                        const existing = grouped.get(key);
+                        const existingRegs = existing.members.map(m => m.reg_no);
+                        (r.members || []).forEach(m => {
+                            if (!existingRegs.includes(m.reg_no)) existing.members.push(m);
+                        });
+                        if(!existing.is_leader && r.is_leader) {
+                            const m = existing.members;
+                            Object.assign(existing, r);
+                            existing.members = m;
+                        }
+                    }
+                });
+
+                // 2. Process Culturals
+                const processedCulturals = cultData.map(c => ({
+                    ...c,
+                    type: 'cultural',
+                    registered_at: c.booked_at, // for sorting
+                    title: c.cultural_title
+                }));
+
+                // Combine and Sort
+                const combined = [
+                    ...Array.from(grouped.values()),
+                    ...processedCulturals
+                ].sort((a,b) => new Date(b.registered_at) - new Date(a.registered_at));
+
+                allActivityData = combined;
+
+                if(combined.length === 0) {
+                    list.innerHTML = `
+                        <div class="p-12 text-center bg-white border border-dashed border-slate-200 rounded-[2rem]">
+                            <p class="text-slate-400 font-bold italic">No activity logs found. Ready for your first mission?</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                list.innerHTML = combined.map(r => {
+                    if (r.type === 'cultural') {
+                        return `
+                        <div class="bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden transition-all hover:shadow-md">
+                            <div class="p-6 flex items-center justify-between">
+                                <div class="flex items-center gap-5">
+                                    <div class="h-14 w-14 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center shadow-inner">
+                                        <i data-lucide="ticket" class="w-6 h-6"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="font-black text-slate-900 tracking-tight">Admission Ticket: ${r.title}</h4>
+                                        <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">${r.venue} • Booked on ${new Date(r.booked_at).toLocaleDateString()}</p>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-3">
+                                    <span class="px-3 py-1 bg-green-50 text-green-600 rounded-lg text-[9px] font-black uppercase tracking-tighter border border-green-100 italic">Confirmed</span>
+                                    <button onclick="toggleCulturalDetails(${r.id})" class="h-10 w-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 hover:bg-primary hover:text-white transition-all">
+                                        <i data-lucide="chevron-down" id="icon-cult-${r.id}" class="w-5 h-5 transition-transform duration-300"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <!-- Expandable Details -->
+                            <div id="details-cult-${r.id}" class="hidden border-t border-slate-50 bg-slate-50/50 p-6 animate-in">
+                                <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+                                    <div>
+                                        <p class="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Ticket ID</p>
+                                        <p class="text-[10px] font-black text-slate-900">#CULT-${r.id || 'N/A'}</p>
+                                    </div>
+                                    <div>
+                                        <p class="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Price Paid</p>
+                                        <p class="text-[10px] font-black text-slate-900">₹${r.amount_paid || '0'}</p>
+                                    </div>
+                                    <div>
+                                        <p class="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Gate Entry</p>
+                                        <p class="text-[10px] font-black text-emerald-600 font-bold italic italic">Admission Secured</p>
+                                    </div>
+                                    <div class="flex justify-end items-center">
+                                       <div id="qr-container-${r.id}" class="h-16 w-16 bg-white rounded-lg border border-slate-100 flex items-center justify-center p-1">
+                                           <!-- QR Code injected here -->
+                                           <div class="opacity-20"><i data-lucide="qr-code" class="w-8 h-8"></i></div>
+                                       </div>
+                                    </div>
+                                    <!-- Hidden data for QR -->
+                                    <input type="hidden" id="qr-data-${r.id}" value="ADMISSION ID: ${r.id}\nEVENT: ${r.title}\nSTUDENT: ${myProfile ? myProfile.full_name : 'N/A'}\nREG NO: ${myProfile ? myProfile.reg_no : 'N/A'}">
+                                </div>
+                            </div>
+                        </div>`;
+                    }
+
+                    // Original Registration Card HTML ...
+                    const eventDate = new Date(r.start_date);
+                    const isWithinWindow = r.start_date && (new Date(r.start_date) - new Date() > 7 * 60 * 60 * 1000);
+                    const canEdit = r.edit_count < 2 && isWithinWindow;
+
+                    return `
+                    <div id="reg-card-${r.reg_id}" class="bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden transition-all hover:shadow-md">
+                        <!-- Summary Row -->
+                        <div onclick="toggleRegDetails(${r.reg_id})" class="p-6 flex items-center justify-between cursor-pointer group">
+                            <div class="flex items-center gap-5">
+                                <div class="h-14 w-14 rounded-2xl bg-blue-50 text-primary flex items-center justify-center shadow-inner group-hover:bg-primary group-hover:text-white transition-all">
+                                    <i data-lucide="${r.amount_paid > 0 ? 'shield-check' : 'zap'}" class="w-6 h-6"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-black text-slate-900 tracking-tight">Registered for ${r.title}</h4>
+                                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">${r.club_name} • ${new Date(r.registered_at).toLocaleDateString()}</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <span class="px-3 py-1 bg-green-50 text-green-600 rounded-lg text-[9px] font-black uppercase tracking-tighter border border-green-100">${r.status}</span>
+                                <i id="chevron-${r.reg_id}" data-lucide="chevron-down" class="w-4 h-4 text-slate-300 transition-all"></i>
+                            </div>
+                        </div>
+
+                        <!-- Expanded Details -->
+                        <div id="reg-details-${r.reg_id}" class="hidden px-8 pb-8 pt-2 bg-slate-50/50 border-t border-slate-50 animate-in">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 py-6">
+                                <div class="space-y-4">
+                                    <div class="flex flex-col">
+                                        <span class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">Logistics / Venue</span>
+                                        <p class="text-sm font-bold text-slate-700">${r.hall_name || 'TBA Detail'}</p>
+                                    </div>
+                                    <div class="flex flex-col">
+                                        <span class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">Transaction Identity</span>
+                                        <p class="text-sm font-bold text-primary">${r.razorpay_payment_id || 'FREE_REG'}</p>
+                                    </div>
+                                    <div class="flex flex-col">
+                                        <span class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">Team Identity</span>
+                                        <p class="text-sm font-bold text-slate-900">${r.team_name || 'Individual Entry'}</p>
+                                    </div>
+                                    <div class="flex flex-col pt-2">
+                                        <span class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-2">Team Roster</span>
+                                        <div class="flex flex-wrap gap-2">
+                                            ${r.members && r.members.length > 0 ? r.members.map(m => {
+                                                const isLeader = (Number(m.id) === Number(r.leader_id));
+                                                return `
+                                                <div class="px-4 py-2 ${isLeader ? 'bg-amber-50 border-amber-200' : 'bg-white border-slate-100'} border rounded-xl flex items-center gap-3 shadow-sm">
+                                                    <div class="flex flex-col">
+                                                        <div class="flex items-center gap-2">
+                                                            <span class="text-[11px] font-black ${isLeader ? 'text-amber-900' : 'text-slate-700'} leading-none">${m.full_name}</span>
+                                                            ${isLeader ? '<span class="px-1.5 py-0.5 bg-amber-200 text-amber-900 text-[8px] font-black rounded uppercase">Leader</span>' : ''}
+                                                        </div>
+                                                        <span class="text-[9px] font-bold ${isLeader ? 'text-amber-600' : 'text-slate-400'} mt-0.5 uppercase tracking-tighter">${m.reg_no}</span>
+                                                    </div>
+                                                </div>
+                                            `}).join('') : '<p class="text-[10px] italic text-slate-300">No roster details available.</p>'}
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="bg-white p-6 rounded-2xl border border-slate-100 flex flex-col items-center justify-center text-center shadow-sm relative overflow-hidden">
+                                    ${r.otp_present ? `
+                                        <div class="absolute inset-0 bg-emerald-500/5 flex flex-col items-center justify-center animate-in zoom-in">
+                                            <div class="w-12 h-12 rounded-full bg-emerald-500 text-white flex items-center justify-center mb-2 shadow-lg shadow-emerald-200">
+                                                <i data-lucide="check" class="w-6 h-6 stroke-[3]"></i>
+                                            </div>
+                                            <p class="text-[10px] font-black text-emerald-600 uppercase tracking-widest leading-none">Presence Verified</p>
+                                        </div>
+                                    ` : r.event_otp ? `
+                                        <span class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3">Presence Verification</span>
+                                        <div class="flex flex-col items-center gap-3 w-full">
+                                            <div class="px-4 py-2 bg-indigo-50 border border-indigo-100 rounded-xl">
+                                                <p class="text-[10px] font-black text-primary uppercase tracking-widest mb-1 opacity-50 text-center">Your Check-in Code</p>
+                                                <p class="text-2xl font-black text-primary tracking-[0.3em] font-mono">${r.event_otp}</p>
+                                            </div>
+                                            <div class="flex gap-2 w-full">
+                                                <input type="text" id="otp-input-${r.event_id}" placeholder="Enter Code..." class="flex-1 px-3 py-3 bg-slate-50 border border-slate-200 rounded-xl text-center text-xs font-black text-slate-700 uppercase focus:ring-2 focus:ring-primary/20 transition-all">
+                                                <button onclick="submitPresenceOTP(${r.event_id}, document.getElementById('otp-input-${r.event_id}').value)" class="px-4 bg-primary text-white rounded-xl font-bold text-[10px] uppercase hover:bg-black transition-all shadow-lg shadow-blue-900/10">
+                                                    Verify
+                                                </button>
+                                            </div>
+                                            <p class="text-[8px] font-bold text-slate-400 italic">Enter the code above to mark your presence.</p>
+                                        </div>
+                                    ` : `
+                                        <span class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3">Mission Starts In</span>
+                                        <div class="countdown-timer flex gap-3 font-black text-primary text-2xl tracking-tighter" data-target="${r.start_date}">
+                                            -- : -- : --
+                                        </div>
+                                        <p class="text-[10px] font-bold text-slate-300 mt-2 uppercase">${new Date(r.start_date).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}</p>
+                                    `}
+                                </div>
+                            </div>
+
+                            <div class="mt-4 flex items-center justify-between pt-4 border-t border-slate-100">
+                                <div class="flex items-center gap-2">
+                                    <i data-lucide="info" class="w-4 h-4 text-slate-400"></i>
+                                    <p class="text-[10px] font-bold text-slate-400 italic">
+                                        ${r.is_leader ? 'Two-time team editing is available up to 7 hours before the event starts.' : 'Only the team leader can modify this roster.'}
+                                    </p>
+                                </div>
+                                ${r.is_leader ? (canEdit ? `
+                                    <button onclick="openTeamEditModal(${r.reg_id}, ${r.event_id})" class="px-6 py-3 bg-primary text-white rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-black transition-all shadow-lg shadow-blue-900/10">
+                                        Modify Team
+                                    </button>
+                                ` : `
+                                    <span class="px-5 py-3 bg-slate-100 text-slate-400 rounded-xl font-bold text-[10px] uppercase tracking-widest cursor-not-allowed">
+                                        ${r.edit_count >= 2 ? 'Edit Limit Used' : 'Edit Window Closed'}
+                                    </span>
+                                `) : ''}
+                            </div>
+                        </div>
+                    </div>
+                `}).join('');
+                lucide.createIcons();
+                updateAllCountdowns();
+            } catch(e) { console.error(e); }
+        }
+
+        function toggleRegDetails(id) {
+            const details = document.getElementById(`reg-details-${id}`);
+            const chevron = document.getElementById(`chevron-${id}`);
+            const isHidden = details.classList.contains('hidden');
+            
+            // Close others
+            document.querySelectorAll('[id^="reg-details-"]').forEach(d => d.classList.add('hidden'));
+            document.querySelectorAll('[id^="chevron-"]').forEach(c => c.style.transform = 'rotate(0deg)');
+
+            if(isHidden) {
+                details.classList.remove('hidden');
+                chevron.style.transform = 'rotate(180deg)';
+                lucide.createIcons();
+            }
+        }
+
+        function updateAllCountdowns() {
+            document.querySelectorAll('.countdown-timer').forEach(el => {
+                const target = new Date(el.dataset.target);
+                const diff = target - new Date();
+                
+                if(diff <= 0) {
+                    el.innerHTML = "MISSION ACTIVE";
+                    el.classList.add('text-emerald-500');
+                    return;
+                }
+
+                const hours = Math.floor(diff / (1000 * 60 * 60));
+                const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                const secs = Math.floor((diff % (1000 * 60)) / 1000);
+
+                el.innerHTML = `
+                    <div class="flex flex-col items-center"><span>${String(hours).padStart(2, '0')}</span><span class="text-[5px] opacity-40 uppercase">Hr</span></div>
+                    <span class="opacity-20">:</span>
+                    <div class="flex flex-col items-center"><span>${String(mins).padStart(2, '0')}</span><span class="text-[5px] opacity-40 uppercase">Min</span></div>
+                    <span class="opacity-20">:</span>
+                    <div class="flex flex-col items-center"><span>${String(secs).padStart(2, '0')}</span><span class="text-[5px] opacity-40 uppercase">Sec</span></div>
+                `;
+            });
+        }
+        setInterval(updateAllCountdowns, 1000);
+
+        // Team Edit Logic
+        let editingRegId = null;
+        let editingRegLeaderId = null;
+        async function openTeamEditModal(regId, eventId) {
+            editingRegId = regId;
+            const reg = allActivityData.find(a => a.reg_id === regId);
+            if(!reg) return;
+            editingRegLeaderId = reg.leader_id;
+
+            await initiateRegistration(eventId); // Sets base event context
+            
+            // Overwrite with existing data
+            if(reg.team_name) {
+                const teamNameInput = document.getElementById('teamNameInput');
+                if(teamNameInput) teamNameInput.value = reg.team_name;
+            }
+
+            if(reg.members && reg.members.length > 0) {
+                // Pre-populate team size and members
+                targetTeamSize = reg.members.length;
+                selectedTeamMembers = reg.members.map(m => ({
+                    id: m.id || m.student_id, // Ensure we have the ID for consistency
+                    full_name: m.full_name,
+                    reg_no: m.reg_no,
+                    gender: m.gender
+                }));
+                
+                // Re-render UI with populated data
+                renderRegistrationUI();
+            }
+
+            // Modify Modal Title for Editing
+            document.getElementById('regEventTitle').innerHTML = 'Modify Team Roster';
+            const transferSection = document.getElementById('leaderTransferSection');
+            const leaderSelect = document.getElementById('newLeaderSelect');
+            if(transferSection && leaderSelect) {
+                transferSection.classList.remove('hidden');
+                leaderSelect.innerHTML = '<option value="">Keep Current Lead (You)</option>';
+                // Show EVERYONE ELSE except the current leader as a potential successor
+                selectedTeamMembers.filter(m => Number(m.id) !== Number(editingRegLeaderId)).forEach(m => {
+                    leaderSelect.innerHTML += `<option value="${m.id}">${m.full_name} (${m.reg_no})</option>`;
+                });
+            }
+
+            const footerBtn = document.querySelector('#regModal button.w-full');
+            footerBtn.textContent = 'Apply Modification (Final)';
+            footerBtn.onclick = async () => {
+                const friend_ids = selectedTeamMembers.map((m, i) => {
+                    // Collect all IDs except the one that will be the LEADER
+                    const currentLeadId = editingRegLeaderId;
+                    const nextLeadId = document.getElementById('newLeaderSelect').value || currentLeadId;
+                    return Number(m.id) === Number(nextLeadId) ? null : m.id;
+                }).filter(id => id);
+                
+                const new_leader_id = document.getElementById('newLeaderSelect').value;
+                try {
+                    const res = await AuthGuard.secureFetch('/api/registrations/edit-team', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({ 
+                            reg_id: editingRegId, 
+                            friend_ids,
+                            new_leader_id: new_leader_id || null
+                        })
+                    });
+                    const data = await res.json();
+                    if(res.ok) {
+                        Swal.fire('Success', 'Team and Leadership updated successfully!', 'success');
+                        closeModal();
+                        loadUpdates();
+                    } else {
+                        Swal.fire('Failed', data.error, 'error');
+                    }
+                } catch(e) { console.error(e); }
+            };
+        }
+
+        // Get current user for UI display
+        const user = AuthGuard.getUser();
+        if (user) {
+            const userName = user.full_name || (user.email ? user.email.split('@')[0] : "User");
+            document.getElementById('userName').textContent = userName;
+            document.getElementById('userRole').textContent = (user.role || 'STUDENT').toUpperCase();
+        }
+
+        function toggleBrief(id) {
+            const brief = document.getElementById(`brief-${id}`);
+            const card = document.getElementById(`card-${id}`);
+            
+            if(brief.classList.contains('hidden')) {
+                // Expand
+                brief.classList.remove('hidden');
+                card.classList.remove('col-span-1');
+                card.classList.add('col-span-full'); // Remove fixed height, allow natural expansion
+            } else {
+                // Collapse
+                brief.classList.add('hidden');
+                card.classList.remove('col-span-full');
+                card.classList.add('col-span-1');
+            }
+        }
+
+        function getDriveDirectLink(url) {
+            if(!url) return 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800';
+            const fileIdMatch = url.match(/\/file\/d\/([^\/]+)/) || url.match(/\?id=([^\&]+)/);
+            if (fileIdMatch && fileIdMatch[1]) {
+                return `https://lh3.googleusercontent.com/u/0/d/${fileIdMatch[1]}`;
+            }
+            return url;
+        }
+
+
+        async function loadEvents() {
+            const grid = document.getElementById('eventsGrid');
+            try {
+                // Fetch registrations first to show "Registered" status
+                const regRes = await AuthGuard.secureFetch('/api/registrations/my-registrations');
+                const regData = await regRes.json();
+                if(regRes.ok) {
+                    // Only mark as REGISTERED if the status is 'approved'
+                    registeredEventIds = regData.filter(r => r.status === 'approved').map(r => r.event_id);
+                }
+
+                const response = await AuthGuard.secureFetch('/api/events/approved');
+                const events = await response.json();
+                allEventsData = events; 
+
+                // Fetch Certificates
+                await loadCertificates(); // Ensure certificates are ready for the "Get Award" buttons
+                renderEvents(events);
+            } catch(e) { console.error(e); }
+        }
+
+        async function loadCertificates() {
+            const grid = document.getElementById('certsGrid');
+            const empty = document.getElementById('certsEmptyState');
+            
+            // Show Loading State
+            empty.classList.add('hidden');
+            grid.innerHTML = `
+                <div class="col-span-full py-20 text-center animate-pulse">
+                    <div class="w-16 h-16 bg-slate-100 rounded-3xl mx-auto mb-6 flex items-center justify-center">
+                        <i data-lucide="award" class="w-8 h-8 text-slate-300"></i>
+                    </div>
+                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest italic">Syncing your digital honors...</p>
+                </div>
+            `;
+            lucide.createIcons();
+
+            try {
+                const certRes = await AuthGuard.secureFetch('/api/certificates/my-certificates');
+                if(certRes.ok) {
+                    myCertificates = await certRes.json();
+                    renderCertificates();
+                }
+            } catch(e) { 
+                console.error("Failed to load certificates", e);
+                renderCertificates(); // Fallback to current state
+            }
+        }
+
+        function filterEvents(type) {
+            // Update UI Active State
+            const pills = document.querySelectorAll('.filter-pill');
+            pills.forEach(p => {
+                p.classList.remove('active');
+                if(p.innerText.toLowerCase().includes(type) || (type === 'all' && p.innerText.toLowerCase().includes('all'))) {
+                    p.classList.add('active');
+                }
+            });
+
+            if(type === 'all') {
+                renderEvents(allEventsData);
+            } else {
+                const filtered = allEventsData.filter(e => 
+                    e.title.toLowerCase().includes(type.toLowerCase())
+                );
+                renderEvents(filtered);
+            }
+        }
+
+        function renderEvents(events) {
+            const grid = document.getElementById('eventsGrid');
+            const noEvents = document.getElementById('noEvents');
+            
+            try {
+                if (!events || events.length === 0) {
+                    grid.innerHTML = '';
+                    noEvents.classList.remove('hidden');
+                    return;
+                }
+
+                noEvents.classList.add('hidden');
+                grid.innerHTML = events.map(e => `
+                    <div id="card-${e.id}" class="group relative overflow-hidden rounded-[2.5rem] bg-white border border-slate-100 shadow-sm transition-all duration-500 hover:shadow-2xl grid grid-cols-1 lg:grid-cols-12 min-h-[360px] w-full h-full">
+                        <!-- Visual Part (Left Poster) -->
+                        <div class="relative bg-slate-100 overflow-hidden lg:col-span-5 h-[240px] lg:h-full shrink-0 border-b lg:border-b-0 lg:border-r border-slate-100">
+                             <img src="${getDriveDirectLink(e.poster_url)}" 
+                                 class="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105" 
+                                 alt="${e.title}">
+                             <div class="absolute inset-0 bg-gradient-to-t from-slate-900/40 via-transparent to-transparent opacity-60"></div>
+                             
+                             <!-- Deadline Badge -->
+                             <div class="absolute top-4 left-4">
+                                <div class="px-3 py-1.5 bg-white/20 backdrop-blur-xl rounded-xl border border-white/20 shadow-xl">
+                                    <p class="text-[7px] font-black uppercase text-white tracking-widest mb-0.5 opacity-80">Application Deadline</p>
+                                    <p class="text-[11px] font-black text-white">${new Date(e.reg_deadline).toLocaleDateString([], {day:'2-digit', month:'short'})}</p>
+                                </div>
+                             </div>
+
+                             <!-- Overlapping Title Info -->
+                             <div class="absolute bottom-4 left-6 right-6">
+                                <div class="flex items-center gap-2 text-white/90 font-black uppercase text-[8px] tracking-widest drop-shadow-lg">
+                                    <i data-lucide="map-pin" class="h-3 w-3"></i> ${e.hall_name}
+                                </div>
+                             </div>
+                        </div>
+
+                        <!-- Content Part (Right Details) -->
+                        <div class="p-8 flex flex-col flex-1 lg:col-span-7 bg-white relative">
+                            <div class="mb-auto">
+                                <div class="flex justify-between items-start mb-2">
+                                    <h3 class="text-2xl font-black text-slate-900 leading-[1.1] tracking-tighter group-hover:text-primary transition-colors line-clamp-2">${e.title}</h3>
+                                </div>
+                                
+                                <div class="space-y-4 mt-6">
+                                    <!-- Date Window -->
+                                    <div class="p-4 bg-slate-50/80 rounded-2xl border border-slate-100">
+                                        <div class="flex items-center justify-between mb-2">
+                                            <p class="text-[8px] font-black text-slate-400 uppercase tracking-widest">Event Window</p>
+                                            <span class="px-2 py-0.5 bg-blue-50 text-blue-600 rounded-md text-[8px] font-black uppercase tracking-tighter italic">
+                                                ${(() => {
+                                                    const start = new Date(e.start_date);
+                                                    const end = new Date(e.end_date);
+                                                    const diffHrs = Math.floor((end - start) / (1000 * 60 * 60));
+                                                    return diffHrs + 'H Session';
+                                                })()}
+                                            </span>
+                                        </div>
+                                        <div class="flex items-center justify-between text-[11px] font-bold text-slate-700">
+                                            <span>${new Date(e.start_date).toLocaleString([], {day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit'})}</span>
+                                            <i data-lucide="arrow-right" class="w-3 h-3 text-slate-300"></i>
+                                            <span>${new Date(e.end_date).toLocaleString([], {day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit'})}</span>
+                                        </div>
+                                    </div>
+
+                                    <!-- Policy & Size Mini Grid -->
+                                    <div class="grid grid-cols-2 gap-3">
+                                        <div class="p-3 bg-slate-50/50 rounded-2xl border border-slate-100 flex items-center gap-2">
+                                            <div class="h-6 w-6 bg-white rounded-lg flex items-center justify-center text-[10px] shadow-sm">🛡️</div>
+                                            <div>
+                                                <p class="text-[7px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Policy</p>
+                                                <p class="text-[9px] font-black ${e.female_mandatory ? 'text-amber-600' : 'text-emerald-600'} uppercase">${e.female_mandatory ? '1 Female' : 'General'}</p>
+                                            </div>
+                                        </div>
+                                        <div class="p-3 bg-slate-50/50 rounded-2xl border border-slate-100 flex items-center gap-2">
+                                            <div class="h-6 w-6 bg-white rounded-lg flex items-center justify-center text-blue-500 shadow-sm"><i data-lucide="users" class="w-3 h-3"></i></div>
+                                            <div>
+                                                <p class="text-[7px] font-black text-slate-400 uppercase tracking-widest leading-none mb-1">Crew Size</p>
+                                                <p class="text-[9px] font-black text-slate-700 uppercase">${e.min_team_size && e.min_team_size != e.team_size ? e.min_team_size + '-' + e.team_size : e.team_size || 1} Pax</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Footer Actions -->
+                            <div class="mt-8 pt-6 border-t border-slate-50 flex flex-col gap-4">
+                                <div id="brief-${e.id}" class="hidden animate-in">
+                                     <div class="bg-indigo-50/30 p-4 rounded-xl border border-indigo-100/50 mb-3">
+                                        <p class="text-xs text-slate-500 leading-relaxed italic whitespace-pre-wrap">"${e.description || 'Mission brief pending...'}"</p>
+                                     </div>
+                                </div>
+
+                                <div class="flex items-center justify-between">
+                                    <div class="flex flex-col">
+                                        <span class="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-0.5">Registration Fee</span>
+                                        <span class="text-xl font-black text-primary">${e.reg_amount > 0 ? '₹' + e.reg_amount : 'FREE'}</span>
+                                    </div>
+                                    <div class="flex gap-2">
+                                        ${(() => {
+                                            const cert = myCertificates.find(c => Number(c.event_id) === Number(e.id));
+                                            return cert ? `
+                                                <button onclick="downloadCertificate(${cert.id}, '${cert.file_url || ''}')" 
+                                                        class="px-6 h-12 bg-emerald-100 text-emerald-700 rounded-2xl font-black text-[10px] uppercase tracking-widest border border-emerald-200 hover:bg-emerald-200 transition-all flex items-center gap-2">
+                                                    <i data-lucide="award" class="w-4 h-4"></i> Get Award
+                                                </button>
+                                            ` : '';
+                                        })()}
+
+                                        <button onclick="toggleBrief(${e.id})" class="h-12 w-12 bg-slate-50 text-slate-400 rounded-2xl border border-slate-100 hover:bg-slate-100 transition-all flex items-center justify-center">
+                                            <i data-lucide="info" class="w-5 h-5"></i>
+                                        </button>
+                                        
+                                        ${registeredEventIds.includes(e.id) ? `
+                                            <div class="h-12 w-12 bg-emerald-500 text-white rounded-2xl shadow-lg shadow-emerald-200 flex items-center justify-center transition-all animate-in zoom-in" title="Already Registered">
+                                                <i data-lucide="check" class="w-6 h-6"></i>
+                                            </div>
+                                        ` : `
+                                            <button onclick="initiateRegistration(${e.id})" class="px-8 h-12 bg-primary text-white rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl shadow-blue-900/10 hover:-translate-y-0.5 transition-all">
+                                                Register Mission
+                                            </button>
+                                        `}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+
+                lucide.createIcons();
+            } catch(e) { console.error(e); }
+        }
+
+        function renderCertificates() {
+            const grid = document.getElementById('certsGrid');
+            const empty = document.getElementById('certsEmptyState');
+            
+            if(!myCertificates || myCertificates.length === 0) {
+                grid.innerHTML = '';
+                empty.classList.remove('hidden');
+                return;
+            }
+
+            empty.classList.add('hidden');
+            grid.innerHTML = myCertificates.map(c => `
+                <div class="bg-white rounded-[2rem] p-8 border border-slate-100 shadow-sm hover:shadow-xl transition-all group animate-in slide-in-from-bottom-5">
+                    <div class="h-16 w-16 bg-emerald-50 text-emerald-500 rounded-3xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                        <i data-lucide="award" class="w-8 h-8"></i>
+                    </div>
+                    <h4 class="text-xl font-black text-slate-900 leading-tight mb-2">${c.event_title}</h4>
+                    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-8">
+                        Event Date: ${new Date(c.start_date).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}
+                    </p>
+                    
+                    <button onclick="downloadCertificate(${c.id}, '${c.file_url || ''}')" class="w-full py-4 bg-slate-900 border-b-4 border-black text-white rounded-2xl font-black text-[10px] uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-black transition-all group/btn">
+                        Download Honors <i data-lucide="download" class="w-4 h-4 group-hover/btn:translate-y-0.5 transition-transform"></i>
+                    </button>
+                </div>
+            `).join('');
+            lucide.createIcons();
+        }
+
+        async function downloadCertificate(certId, directUrl) {
+            // Speed Optimization: If we already have the pre-calculated direct link, use it!
+            if (directUrl && directUrl.startsWith('http')) {
+                Swal.fire({
+                    title: 'Award Located!',
+                    text: 'Opening your digital certificate from Google Drive...',
+                    icon: 'success',
+                    toast: true,
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    timer: 3000
+                });
+                window.open(directUrl, '_blank');
+                return;
+            }
+
+            // Fallback for older records: Fetch from backend
+            try {
+                Swal.fire({
+                    title: 'Connecting to Drive...',
+                    text: 'Checking honors registry',
+                    showConfirmButton: false,
+                    allowOutsideClick: false,
+                    didOpen: () => { Swal.showLoading(); }
+                });
+
+                const res = await AuthGuard.secureFetch(`/api/certificates/download/${certId}`);
+                const data = await res.json();
+                
+                if (res.ok && data.redirect_url) {
+                    Swal.close();
+                    window.open(data.redirect_url, '_blank');
+                    
+                    Swal.fire({
+                        title: 'Award Located!',
+                        text: 'Redirecting you to your digital certificate in Google Drive.',
+                        icon: 'success',
+                        toast: true,
+                        position: 'top-end',
+                        showConfirmButton: false,
+                        timer: 3000
+                    });
+                } else {
+                    Swal.fire('Search Failed', data.error || 'The organizer has not provided a valid link for this certificate yet.', 'info');
+                }
+            } catch(e) { 
+                console.error(e); 
+                Swal.fire('Link Expired', 'Please contact the event organizer for assistance.', 'error');
+            }
+        }
+
+        loadEvents();
+
+        // --- FRIENDS MODULE LOGIC ---
+        let myFriends = [];
+        let pendingRequests = []; // Incoming
+        let sentRequests = [];    // Outgoing
+
+        async function loadFriends() {
+            try {
+                const res = await AuthGuard.secureFetch('/api/friends/list');
+                const data = await res.json();
+                if(res.ok) {
+                    myFriends = data;
+                    renderFriendsList();
+                }
+            } catch(e) { console.error("Friend load failed", e); }
+        }
+
+        async function loadRequests() {
+            try {
+                // Fetch Incoming
+                const resIn = await AuthGuard.secureFetch('/api/friends/requests');
+                if(resIn.ok) pendingRequests = await resIn.json();
+                
+                // Fetch Outgoing
+                const resOut = await AuthGuard.secureFetch('/api/friends/requests/sent');
+                if(resOut.ok) sentRequests = await resOut.json();
+
+                renderRequestsList();
+            } catch(e) { console.error("Requests load failed", e); }
+        }
+
+        function renderFriendsList() {
+            const list = document.getElementById('friendsList');
+            if(myFriends.length === 0) {
+                list.innerHTML = '<p class="col-span-full text-center text-slate-400 py-10 font-bold italic text-sm italic">You haven\'t added any friends yet.</p>';
+                return;
+            }
+            list.innerHTML = myFriends.map(f => `
+                <div class="p-4 bg-slate-50 border border-slate-100 rounded-2xl flex items-center justify-between group hover:bg-white hover:shadow-md transition-all">
+                    <div class="flex items-center gap-3">
+                        <div class="h-10 w-10 flex items-center justify-center rounded-xl bg-blue-100 text-primary font-black text-xs uppercase tracking-tighter shadow-inner">${f.full_name.charAt(0)}</div>
+                        <div>
+                            <p class="text-xs font-black text-slate-900">${f.full_name}</p>
+                            <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">${f.reg_no}</p>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+            lucide.createIcons();
+        }
+
+        function renderRequestsList() {
+            // Update Sidebar Badge
+            const badge = document.getElementById('friendBadge');
+            if(pendingRequests.length > 0) {
+                badge.textContent = pendingRequests.length;
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+            }
+
+            // Render Incoming
+            const list = document.getElementById('requestsList');
+            if(pendingRequests.length === 0) {
+                list.innerHTML = '<div class="py-10 text-center opacity-40 italic font-bold text-sm">No pending requests</div>';
+            } else {
+                list.innerHTML = pendingRequests.map(r => `
+                    <div class="p-5 bg-white/5 border border-white/10 rounded-2xl backdrop-blur-md">
+                        <p class="text-[10px] font-black uppercase text-blue-300 tracking-widest mb-3">Incoming Request</p>
+                        <div class="flex items-center gap-3 mb-4">
+                            <div class="h-10 w-10 flex items-center justify-center rounded-xl bg-white text-indigo-900 font-black text-xs">${r.full_name.charAt(0)}</div>
+                            <div class="flex-1 overflow-hidden">
+                                <p class="text-xs font-black truncate">${r.full_name}</p>
+                                <p class="text-[9px] font-bold opacity-60 uppercase tracking-widest">${r.reg_no}</p>
+                            </div>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="respondToRequest(${r.request_id}, 'accepted')" class="flex-1 py-2 bg-blue-500 rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-blue-400 transition-colors">Accept</button>
+                            <button onclick="respondToRequest(${r.request_id}, 'rejected')" class="flex-1 py-2 bg-white/10 rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-white/20 transition-colors text-white/60">Decline</button>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            // Render Outgoing
+            const sentList = document.getElementById('sentRequestsList');
+            if(sentRequests.length === 0) {
+                sentList.innerHTML = '<div class="py-10 text-center text-slate-300 italic font-bold text-[10px] uppercase tracking-widest">No sent requests</div>';
+            } else {
+                sentList.innerHTML = sentRequests.map(s => `
+                    <div class="p-4 border border-slate-100 rounded-2xl bg-slate-50/50 flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="h-8 w-8 rounded-lg bg-blue-50 text-primary flex items-center justify-center font-black text-[10px]">${s.full_name.charAt(0)}</div>
+                            <div>
+                                <p class="text-[10px] font-black text-slate-700">${s.full_name}</p>
+                                <p class="text-[8px] font-bold text-slate-400 uppercase tracking-tighter">${s.reg_no}</p>
+                            </div>
+                        </div>
+                        <span class="px-2 py-1 bg-white border border-slate-200 rounded-md text-[7px] font-black uppercase text-slate-400 tracking-widest">Pending</span>
+                    </div>
+                `).join('');
+            }
+            lucide.createIcons();
+        }
+
+        async function respondToRequest(requestId, action) {
+            try {
+                const res = await AuthGuard.secureFetch('/api/friends/respond', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ request_id: requestId, action })
+                });
+                if(res.ok) {
+                    Swal.fire('Success', `Friend request ${action === 'accepted' ? 'approved' : 'ignored'}.`, 'success');
+                    loadRequests();
+                    loadFriends();
+                }
+            } catch(e) { console.error(e); }
+        }
+
+        async function searchUsers(q) {
+            const container = document.getElementById('searchResults');
+            if(q.length < 2) {
+                container.innerHTML = '<p class="text-center text-slate-400 py-10 font-bold italic text-sm">Type to begin searching the campus directory.</p>';
+                return;
+            }
+            try {
+                const res = await AuthGuard.secureFetch(`/api/friends/search?q=${q}`);
+                const users = await res.json();
+                if(users.length === 0) {
+                    container.innerHTML = '<p class="text-center text-slate-400 py-10 font-bold italic text-sm">No students found matching that query.</p>';
+                    return;
+                }
+                container.innerHTML = users.map(u => {
+                    const isFriend = myFriends.some(f => f.id === u.id);
+                    const isPendingIncoming = pendingRequests.some(r => r.user_id === u.id);
+                    const isPendingOutgoing = sentRequests.some(r => r.friend_id === u.id);
+
+                    let btnHtml = '';
+                    if (isFriend) {
+                        btnHtml = `<button disabled class="px-4 py-2 bg-emerald-50 text-emerald-600 rounded-xl text-[9px] font-black uppercase tracking-widest">Connected</button>`;
+                    } else if (isPendingIncoming) {
+                        btnHtml = `<button onclick="showSection('friends')" class="px-4 py-2 bg-amber-50 text-amber-600 rounded-xl text-[9px] font-black uppercase tracking-widest">Respond to Request</button>`;
+                    } else if (isPendingOutgoing) {
+                        btnHtml = `<button disabled class="px-4 py-2 bg-blue-50 text-blue-600/50 rounded-xl text-[9px] font-black uppercase tracking-widest">Wait for responding...</button>`;
+                    } else {
+                        btnHtml = `<button onclick="sendFriendRequest(${u.id})" class="px-4 py-2 bg-primary text-white hover:bg-blue-800 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all">Add Friend</button>`;
+                    }
+
+                    return `
+                        <div class="flex items-center justify-between p-4 bg-slate-50 border border-slate-100 rounded-2xl hover:bg-white hover:border-blue-100 transition-all">
+                            <div class="flex items-center gap-3">
+                                <div class="h-10 w-10 flex items-center justify-center rounded-xl bg-white border border-slate-200 text-primary font-black text-xs uppercase">${u.full_name.charAt(0)}</div>
+                                <div>
+                                    <p class="text-xs font-black text-slate-900">${u.full_name}</p>
+                                    <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">${u.reg_no}</p>
+                                </div>
+                            </div>
+                            ${btnHtml}
+                        </div>
+                    `;
+                }).join('');
+            } catch(e) { console.error(e); }
+        }
+
+        async function sendFriendRequest(id) {
+            try {
+                const res = await AuthGuard.secureFetch('/api/friends/request', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ friend_id: id })
+                });
+                const data = await res.json();
+                if(res.ok) {
+                    Swal.fire('Request Sent!', 'A notification has been sent to their inbox.', 'success');
+                    await loadRequests(); // Reload sent requests
+                    searchUsers(document.getElementById('userSearchInput').value);
+                } else {
+                    Swal.fire('Failed', data.error || 'Connection error', 'error');
+                }
+            } catch(e) { console.error(e); }
+        }
+
+        // --- REGISTRATION LOGIC REFACTORED ---
+        let currentEvent = null;
+        let selectedTeamMembers = [];
+        let targetTeamSize = 1;
+        let myProfile = null;
+        let selectedLeaderId = null; // Tracks leader for NEW registrations
+
+        async function initiateRegistration(eventId) {
+            const event = allEventsData.find(e => e.id == eventId);
+            if(!event) {
+                console.error("Event not found for ID:", eventId);
+                return;
+            }
+            
+            // Initialization
+            currentEvent = event;
+            
+            // Use full profile for leader to ensure gender is available
+            if(!myProfile) {
+                Swal.fire('Loading...', 'Fetching system identity...', 'info');
+                await checkProfileCompleteness();
+            }
+
+            selectedTeamMembers = [{ 
+                id: myProfile.id, 
+                full_name: myProfile.full_name,
+                reg_no: myProfile.reg_no,
+                gender: myProfile.gender
+            }];
+            selectedLeaderId = myProfile.id; // Default leader is the registrar
+            targetTeamSize = event.min_team_size || 1;
+            
+            // Always show Team Name visibility
+            const teamNameInput = document.getElementById('teamNameInput');
+            if(teamNameInput) teamNameInput.value = '';
+            const tnc = document.getElementById('teamNameControl');
+            if(tnc) tnc.classList.remove('hidden');
+
+            renderRegistrationUI();
+            document.getElementById('regModal').classList.remove('hidden');
+        }
+
+        function renderRegistrationUI() {
+            if(!currentEvent) return;
+            const event = currentEvent;
+
+            // Update Header
+            document.getElementById('regEventTitle').textContent = event.title;
+            document.getElementById('regEventHall').textContent = event.hall_name || 'TBA Detail';
+            document.getElementById('regEventPrice').textContent = event.reg_amount > 0 ? `Paid Event (₹${event.reg_amount})` : 'Mission Grant: Free';
+            
+            if(event.start_date) {
+                const dt = new Date(event.start_date);
+                document.getElementById('regEventDate').textContent = dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                document.getElementById('regEventTime').textContent = dt.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+            }
+            document.getElementById('teamSizeRange').textContent = `Required: ${event.min_team_size || 1}${event.team_size && event.team_size > 1 ? ' - ' + event.team_size : ''}`;
+
+            // Inject Team Size Buttons
+            const btnContainer = document.getElementById('teamSizeButtons');
+            btnContainer.innerHTML = '';
+            
+            if(!event.team_size || event.team_size === 1) {
+                document.getElementById('teamSizeControl').classList.add('hidden');
+                targetTeamSize = 1;
+            } else {
+                document.getElementById('teamSizeControl').classList.remove('hidden');
+                const min = event.min_team_size || 1;
+                const max = event.team_size;
+                for(let i = min; i <= max; i++) {
+                    const btn = document.createElement('button');
+                    btn.textContent = i;
+                    btn.className = `h-12 w-12 rounded-xl border-2 font-black transition-all ${i === targetTeamSize ? 'bg-primary border-primary text-white shadow-lg' : 'bg-slate-50 border-slate-100 text-slate-400 hover:border-blue-200 hover:text-primary'}`;
+                    btn.onclick = () => {
+                        targetTeamSize = i;
+                        // If current members exceeded, trim
+                        if(selectedTeamMembers.length > targetTeamSize) {
+                            selectedTeamMembers = selectedTeamMembers.slice(0, targetTeamSize);
+                        }
+                        
+                        // Always show Team Name Control
+                        const teamNameControl = document.getElementById('teamNameControl');
+                        if(teamNameControl) teamNameControl.classList.remove('hidden');
+
+                        renderRegistrationUI(); // Update UI only
+                    };
+                    btnContainer.appendChild(btn);
+                }
+            }
+
+            renderTeamMembers();
+            lucide.createIcons();
+        }
+
+        function renderTeamMembers() {
+            const container = document.getElementById('selectedMembers');
+            container.innerHTML = '';
+            
+            for(let i = 0; i < targetTeamSize; i++) {
+                const member = selectedTeamMembers[i];
+                if(member) {
+                    container.innerHTML += `
+                        <div class="p-4 bg-slate-900 text-white rounded-2xl flex items-center justify-between shadow-xl shadow-slate-900/10 border border-slate-800">
+                            <div class="flex items-center gap-3">
+                                <div class="h-8 w-8 flex items-center justify-center rounded-lg bg-white/10 font-black text-[10px] text-blue-400">${member.full_name ? member.full_name.charAt(0) : 'U'}</div>
+                                <div class="flex flex-col">
+                                    <div class="flex items-center gap-2">
+                                        <p class="text-[10px] font-black tracking-tight">${member.full_name} ${Number(member.id) === Number(user.id) ? '<span class="text-[8px] text-blue-400 opacity-80">(YOU)</span>' : ''}</p>
+                                        ${(Number(member.id) === Number(editingRegLeaderId) || (!editingRegLeaderId && Number(member.id) === Number(selectedLeaderId))) ? `
+                                            <span class="px-1.5 py-0.5 rounded bg-amber-200 text-amber-900 text-[7px] font-black uppercase tracking-tighter">
+                                                Leader
+                                            </span>
+                                        ` : ''}
+                                        ${member.gender ? `
+                                            <span class="px-1.5 py-0.5 rounded text-[7px] font-black uppercase tracking-tighter ${member.gender.toLowerCase() === 'female' ? 'bg-pink-500/20 text-pink-300' : 'bg-blue-500/20 text-blue-300'}">
+                                                ${member.gender}
+                                            </span>
+                                        ` : ''}
+                                    </div>
+                                    <p class="text-[8px] font-bold opacity-40 uppercase tracking-widest">${member.reg_no}</p>
+                                </div>
+                            </div>
+                            <!-- Show remove button for everyone EXCEPT the current user and the designated leader -->
+                            ${(Number(member.id) !== Number(user.id) && Number(member.id) !== Number(editingRegLeaderId)) ? `<button onclick="removeFromTeam(${member.id})" class="text-slate-500 hover:text-red-400 transition-colors"><i data-lucide="minus-circle" class="w-4 h-4"></i></button>` : ''}
+                        </div>
+                    `;
+                } else {
+                    container.innerHTML += `
+                        <div class="p-4 bg-slate-50 border-2 border-dashed border-slate-100 rounded-2xl flex items-center justify-center">
+                            <p class="text-[9px] font-black text-slate-300 uppercase tracking-widest italic flex items-center gap-2">
+                                <i data-lucide="plus" class="w-3 h-3"></i> Waiting for friend...
+                            </p>
+                        </div>
+                    `;
+                }
+            }
+
+            // Policy Check
+            const hasFemale = selectedTeamMembers.some(m => m.gender && m.gender.toLowerCase() === 'female');
+            const warning = document.getElementById('regPolicyWarning');
+            if(currentEvent?.female_mandatory && !hasFemale) {
+                warning.classList.remove('hidden');
+            } else {
+                warning.classList.add('hidden');
+            }
+
+            // Populate Leader Transfer Selection (Shared between Edit and New)
+            const leaderSelect = document.getElementById('newLeaderSelect');
+            const transferSection = document.getElementById('leaderTransferSection');
+            if(leaderSelect && transferSection) {
+                if (targetTeamSize > 1) {
+                    transferSection.classList.remove('hidden');
+                    const currentVal = leaderSelect.value;
+                    const activeLeaderId = editingRegLeaderId || selectedLeaderId;
+                    
+                    leaderSelect.innerHTML = `<option value="">Keep Lead (${activeLeaderId === user.id ? 'You' : 'Current'})</option>`;
+                    
+                    selectedTeamMembers.filter(m => m && Number(m.id) !== Number(activeLeaderId)).forEach(m => {
+                        leaderSelect.innerHTML += `<option value="${m.id}">${m.full_name} (${m.reg_no})</option>`;
+                    });
+                    
+                    if(currentVal) leaderSelect.value = currentVal;
+                    
+                    // Add change listener to update selectedLeaderId for NEW regs
+                    leaderSelect.onchange = (e) => {
+                        if (!editingRegId) {
+                            selectedLeaderId = e.target.value || user.id;
+                            renderTeamMembers();
+                        }
+                    };
+                } else {
+                    transferSection.classList.add('hidden');
+                }
+            }
+
+            lucide.createIcons();
+        }
+
+        function removeFromTeam(id) {
+            selectedTeamMembers = selectedTeamMembers.filter(m => m.id !== id);
+            renderTeamMembers();
+        }
+
+        function searchFriendsForTeam(q) {
+            const results = document.getElementById('teamSearchResults');
+            if(q.length < 1) { results.classList.add('hidden'); return; }
+            
+            const filtered = myFriends.filter(f => 
+                (f.full_name.toLowerCase().includes(q.toLowerCase()) || f.reg_no.toLowerCase().includes(q.toLowerCase())) &&
+                !selectedTeamMembers.some(m => m.id === f.id)
+            );
+
+            if(filtered.length === 0) {
+                 results.innerHTML = '<p class="p-4 text-[9px] text-slate-400 font-bold italic">No matching friends in your network.</p>';
+            } else {
+                results.innerHTML = filtered.map(f => `
+                    <div onclick="addToTeam(${f.id})" class="p-4 flex items-center justify-between hover:bg-slate-50 cursor-pointer border-b border-slate-50 last:border-0 transition-all">
+                        <div class="flex items-center gap-3">
+                            <div class="h-8 w-8 rounded-lg bg-blue-50 text-primary flex items-center justify-center font-black text-[10px]">${f.full_name.charAt(0)}</div>
+                            <div>
+                                <div class="flex items-center gap-2">
+                                    <p class="text-[10px] font-black">${f.full_name}</p>
+                                    ${f.gender ? `
+                                        <span class="px-1.5 py-0.5 rounded text-[7px] font-black uppercase tracking-tighter ${f.gender.toLowerCase() === 'female' ? 'bg-pink-100 text-pink-500' : 'bg-blue-100 text-blue-500'}">
+                                            ${f.gender}
+                                        </span>
+                                    ` : ''}
+                                </div>
+                                <p class="text-[8px] font-bold text-slate-400 uppercase">${f.reg_no}</p>
+                            </div>
+                        </div>
+                        <i data-lucide="plus-circle" class="w-4 h-4 text-primary opacity-20 group-hover:opacity-100"></i>
+                    </div>
+                `).join('');
+            }
+            results.classList.remove('hidden');
+            lucide.createIcons();
+        }
+
+        function addToTeam(id) {
+            if(selectedTeamMembers.length >= targetTeamSize) {
+                Swal.fire('Error', `Current team size is capped at ${targetTeamSize}. Increase team size first if allowed.`, 'error');
+                return;
+            }
+            const friend = myFriends.find(f => f.id === id);
+            if(friend) {
+                selectedTeamMembers.push(friend);
+                renderTeamMembers();
+                document.getElementById('teamFriendSearch').value = '';
+                document.getElementById('teamSearchResults').classList.add('hidden');
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('regModal').classList.add('hidden');
+            const transferSection = document.getElementById('leaderTransferSection');
+            if(transferSection) transferSection.classList.add('hidden');
+            currentEvent = null;
+            selectedTeamMembers = [];
+        }
+
+        async function submitTeamRegistration() {
+            if(!currentEvent) return;
+
+            // Final Validation
+            if(selectedTeamMembers.length < (currentEvent.min_team_size || 1)) {
+                 Swal.fire('Incomplete Team', `Please add ${currentEvent.min_team_size - selectedTeamMembers.length} more members.`, 'warning');
+                 return;
+            }
+
+            if(currentEvent.female_mandatory) {
+                const hasFemale = selectedTeamMembers.some(m => m.gender && m.gender.toLowerCase() === 'female');
+                if(!hasFemale) {
+                    Swal.fire('Policy Violation', 'This event requires at least ONE female participant in the team.', 'error');
+                    return;
+                }
+            }
+
+            try {
+                const team_name = document.getElementById('teamNameInput').value;
+                if(!team_name.trim()) {
+                    Swal.fire('Team Name Required', 'Please assign a name for your entry.', 'warning');
+                    return;
+                }
+
+                const friend_ids = selectedTeamMembers.slice(1).map(m => m.id); // Exclude self
+                
+                Swal.fire({ title: 'Deploying Team...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+
+                const res = await AuthGuard.secureFetch('/api/registrations/initiate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        event_id: currentEvent.id, 
+                        friend_ids,
+                        team_name: team_name,
+                        leader_id: selectedLeaderId
+                    })
+                });
+
+                const data = await res.json();
+                if(!res.ok) { Swal.fire('Mission Failed', data.error || 'Unknown error', 'error'); return; }
+
+                if (data.type === 'free') {
+                    Swal.fire('Success!', 'Team registered successfully for free event!', 'success');
+                    closeModal();
+                    loadEvents(); // Refresh buttons
+                    return;
+                }
+
+                // Paid Workflow
+                Swal.close();
+                var options = {
+                    "key": data.key, "amount": data.amount * 100, "currency": "INR", "name": "CampusHub",
+                    "description": currentEvent.title, "order_id": data.order_id,
+                    "handler": async function (resp){
+                        Swal.fire({ title: 'Verifying Registration...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+                        const verifyResp = await AuthGuard.secureFetch('/api/registrations/verify', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ razorpay_payment_id: resp.razorpay_payment_id, razorpay_order_id: resp.razorpay_order_id, razorpay_signature: resp.razorpay_signature })
+                        });
+                        if (verifyResp.ok) {
+                            Swal.fire('Success!', 'Payment verified & Team registration complete!', 'success');
+                            closeModal();
+                            loadEvents(); // Refresh buttons
+                        } else {
+                            const vd = await verifyResp.json();
+                            Swal.fire('Error', vd.error || 'Verification failed', 'error');
+                        }
+                    },
+                    "theme": { "color": "#1e3a8a" }
+                };
+                new Razorpay(options).open();
+            } catch(e) { Swal.fire('Error', 'An error occurred during submission', 'error'); }
+        }
+
+        // Init loads
+        loadFriends();
+        loadRequests();
+        async function checkProfileCompleteness() {
+            try {
+                const res = await AuthGuard.secureFetch('/api/student/profile/get');
+                const data = await res.json();
+                if(res.ok) {
+                    myProfile = data.user;
+                    const u = data.user;
+                    const fieldLabels = {
+                        'reg_no': 'Registration Number',
+                        'phone_number': 'Phone Number',
+                        'address': 'Home Address',
+                        'dob': 'Date of Birth',
+                        'gender': 'Gender',
+                        'department': 'Department',
+                        'college_email': 'Verified College Email'
+                    };
+                    const required = Object.keys(fieldLabels);
+                    const missing = required.filter(field => !u[field] || u[field] === '' || u[field] === 'N/A' || u[field] === 'None');
+                    
+                    if(missing.length > 0) {
+                        const overlay = document.getElementById('profileOverlay');
+                        overlay.classList.remove('hidden');
+                        
+                        // Update overlay text to show what's missing
+                        const missingList = missing.map(m => `<span class="px-3 py-1 bg-red-50 text-red-600 rounded-lg text-[10px] font-black uppercase tracking-tighter">${fieldLabels[m]}</span>`).join(' ');
+                        const bodyPara = overlay.querySelector('p');
+                        bodyPara.innerHTML = `Please complete these fields in your profile:<br><div class="flex flex-wrap justify-center gap-2 mt-4">${missingList}</div>`;
+                        
+                        document.getElementById('userName').innerHTML += ' <span class="ml-2 px-2 py-0.5 bg-amber-100 text-amber-600 rounded-md text-[8px] font-black uppercase tracking-tighter">Profile Incomplete</span>';
+                    }
+                }
+            } catch(e) { console.error("Completeness check failed", e); }
+        }
+        checkProfileCompleteness();
+
+        function logout() { localStorage.clear(); window.location.href='/sign-in.html'; }
+
+        // Final state initialization (Called after all definitions)
+        const lastSection = localStorage.getItem('activeStudentSection') || 'events';
+        showSection(lastSection);
+    </script>
+</body>
+</html>

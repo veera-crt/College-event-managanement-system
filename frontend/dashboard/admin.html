@@ -1,0 +1,1289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="/js/auth-check.js"></script>
+    <script>AuthGuard.requireAuth(['admin']);</script>
+    <title>Admin Dashboard - College Event Management System</title>
+    <link rel="icon" type="image/svg+xml" href="../favicon.svg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#1e3a8a',
+                        secondary: '#3b82f6',
+                        accent: '#ef4444',
+                        background: '#f8fafc',
+                        foreground: '#1e293b',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        .animate-in { animation: fadeIn 0.3s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes wiggle {
+            0%, 100% { transform: rotate(0deg); }
+            25% { transform: rotate(10deg); }
+            75% { transform: rotate(-10deg); }
+        }
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-[#f8fafc] text-[#1e293b]">
+    <div class="grid min-h-screen grid-cols-[280px_1fr]">
+        <!-- Sidebar -->
+        <aside class="flex flex-col border-r border-[#e2e8f0] bg-white p-8">
+            <div class="mb-12 flex items-center gap-3">
+                <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-white font-black text-xl italic shadow-lg shadow-blue-200">A</div>
+                <span class="text-xl font-black tracking-tighter text-primary">ADMIN PORTAL</span>
+            </div>
+
+            <nav class="flex-1 space-y-2">
+                <button onclick="showSection('monitoring')" data-section="monitoring" class="nav-btn flex w-full items-center gap-4 rounded-xl px-5 py-4 text-sm font-bold transition-all border-l-4 border-transparent hover:bg-gray-50 hover:text-primary">
+                    <i data-lucide="monitor" class="h-5 w-5"></i> Monitoring
+                </button>
+                <button onclick="showSection('approvals')" data-section="approvals" class="nav-btn flex w-full items-center gap-4 rounded-xl px-5 py-4 text-sm font-bold transition-all border-l-4 border-transparent hover:bg-gray-50 hover:text-primary">
+                    <i data-lucide="check-circle" class="h-5 w-5"></i> Event Approvals
+                </button>
+                <button onclick="showSection('culturals')" data-section="culturals" class="nav-btn flex w-full items-center gap-4 rounded-xl px-5 py-4 text-sm font-bold transition-all border-l-4 border-transparent hover:bg-gray-50 hover:text-primary">
+                    <i data-lucide="music" class="h-5 w-5"></i> Manage Culturals
+                </button>
+                <button onclick="showSection('inventory')" data-section="inventory" class="nav-btn flex w-full items-center gap-4 rounded-xl px-5 py-4 text-sm font-bold transition-all border-l-4 border-transparent hover:bg-gray-50 hover:text-primary">
+                    <i data-lucide="home" class="h-5 w-5"></i> Hall Inventory
+                </button>
+                <button onclick="showSection('reports')" data-section="reports" class="nav-btn flex w-full items-center gap-4 rounded-xl px-5 py-4 text-sm font-bold transition-all border-l-4 border-transparent hover:bg-gray-50 hover:text-primary">
+                    <i data-lucide="bar-chart" class="h-5 w-5"></i> Event Reports
+                </button>
+                <button onclick="showSection('organizers')" data-section="organizers" class="nav-btn flex w-full items-center gap-4 rounded-xl px-5 py-4 text-sm font-bold transition-all border-l-4 border-transparent hover:bg-gray-50 hover:text-blue-600 bg-blue-50/50">
+                    <i data-lucide="users" class="h-5 w-5"></i> Our Organizers
+                </button>
+            </nav>
+
+            <div class="mt-auto pt-8 border-t border-gray-100">
+                <button onclick="logout()" class="flex w-full items-center gap-4 px-5 py-3 text-sm font-bold text-red-500 hover:text-red-600 transition-colors">
+                    <i data-lucide="log-out" class="h-5 w-5"></i> Sign Out
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="p-12 overflow-y-auto">
+            <header class="mb-12 flex items-center justify-between">
+                <div>
+                    <h1 class="text-4xl font-black text-primary tracking-tight" id="sectionTitle">Admin Control</h1>
+                    <p class="text-gray-500 font-bold uppercase tracking-widest text-xs mt-1" id="sectionSubtitle">Super Administrator</p>
+                </div>
+                <div class="flex items-center gap-6">
+                    <!-- Notification Bell -->
+                    <button onclick="handleNotificationClick()" class="relative h-12 w-12 rounded-xl bg-white border border-gray-100 flex items-center justify-center text-gray-500 hover:text-primary hover:bg-blue-50 transition-all shadow-sm group">
+                        <i data-lucide="bell" class="h-6 w-6 group-hover:animate-[wiggle_1s_ease-in-out_infinite]"></i>
+                        <span id="notifBadge" class="hidden absolute -top-1 -right-1 h-5 min-w-[20px] px-1 bg-red-600 text-white text-[10px] font-black rounded-full border-2 border-white flex items-center justify-center shadow-lg">0</span>
+                    </button>
+
+                    <a href="admin-profile.html" id="adminAvatar" class="h-14 w-14 rounded-2xl bg-indigo-50 border-2 border-white flex items-center justify-center text-primary font-black shadow-xl hover:scale-105 transition-transform">
+                        <i data-lucide="user" class="h-7 w-7 text-primary"></i>
+                    </a>
+                </div>
+
+            </header>
+
+                <!-- Monitoring Section (Shared Calendar) -->
+                <section id="monitoring" class="section hidden animate-in">
+                    <div class="mb-8 flex items-center justify-between">
+                        <div>
+                            <h2 class="text-3xl font-black text-slate-900 tracking-tight">Shared Event Calendar</h2>
+                            <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Full Campus Occupancy Overview</p>
+                        </div>
+                        <div class="flex gap-2">
+                             <div class="flex items-center gap-2 px-3 py-1.5 bg-green-50 text-green-600 rounded-lg text-[9px] font-black uppercase">
+                                 <div class="h-2 w-2 rounded-full bg-green-500"></div> Approved
+                             </div>
+                             <div class="flex items-center gap-2 px-3 py-1.5 bg-amber-50 text-amber-600 rounded-lg text-[9px] font-black uppercase">
+                                 <div class="h-2 w-2 rounded-full bg-amber-500"></div> Pending
+                             </div>
+                             <div class="flex items-center gap-2 px-3 py-1.5 bg-red-50 text-red-600 rounded-lg text-[9px] font-black uppercase">
+                                 <div class="h-2 w-2 rounded-full bg-red-500 animate-pulse"></div> Conflict
+                             </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                        <!-- Calendar Grid -->
+                        <div class="lg:col-span-12 bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden p-8">
+                            <div id="calendarHeader" class="flex justify-between items-center mb-8">
+                                <h3 id="currentMonthYear" class="text-xl font-black text-slate-900 uppercase tracking-tight"></h3>
+                                <div class="flex gap-2">
+                                    <button onclick="changeMonth(-1)" class="h-10 w-10 border border-slate-100 rounded-xl flex items-center justify-center hover:bg-slate-50"><i data-lucide="chevron-left" class="w-5 h-5"></i></button>
+                                    <button onclick="changeMonth(1)" class="h-10 w-10 border border-slate-100 rounded-xl flex items-center justify-center hover:bg-slate-50"><i data-lucide="chevron-right" class="w-5 h-5"></i></button>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-7 gap-px bg-slate-100 rounded-xl overflow-hidden border border-slate-100">
+                                <div class="bg-slate-50 py-4 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest">Sun</div>
+                                <div class="bg-slate-50 py-4 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest">Mon</div>
+                                <div class="bg-slate-50 py-4 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest">Tue</div>
+                                <div class="bg-slate-50 py-4 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest">Wed</div>
+                                <div class="bg-slate-50 py-4 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest">Thu</div>
+                                <div class="bg-slate-50 py-4 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest">Fri</div>
+                                <div class="bg-slate-50 py-4 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest">Sat</div>
+                                <div id="calendarGrid" class="contents"></div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+            <!-- Organizer Management (NEW) -->
+            <div id="organizers" class="section hidden animate-in space-y-8">
+                <!-- Pending Approvals -->
+                <div class="bg-white rounded-[2rem] p-10 border border-gray-100 shadow-sm overflow-hidden">
+                    <h2 class="text-2xl font-black text-[#1e3a8a] mb-6 flex items-center gap-3">
+                        <i data-lucide="shield-alert" class="w-6 h-6 text-amber-500"></i> Pending Approvals
+                    </h2>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse" id="organizerTable">
+                            <thead>
+                                <tr class="border-b-2 border-slate-100 text-xs uppercase tracking-widest text-[#64748b]">
+                                    <th class="py-4 px-4">Applicant</th>
+                                    <th class="py-4 px-4">Contact</th>
+                                    <th class="py-4 px-4">Date</th>
+                                    <th class="py-4 px-4 text-right">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="organizerTbody" class="text-sm font-medium text-slate-700">
+                                <tr><td colspan="4" class="py-10 text-center italic text-gray-400">Loading pending requests...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Active Members -->
+                <div class="bg-white rounded-[2rem] p-10 border border-gray-100 shadow-sm overflow-hidden">
+                    <h2 class="text-2xl font-black text-[#1e3a8a] mb-6 flex items-center gap-3">
+                        <i data-lucide="verified" class="w-6 h-6 text-green-500"></i> Active Club Organizers
+                    </h2>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="border-b-2 border-slate-100 text-xs uppercase tracking-widest text-[#64748b]">
+                                    <th class="py-4 px-4">Member</th>
+                                    <th class="py-4 px-4">Contact</th>
+                                    <th class="py-4 px-4">Status</th>
+                                    <th class="py-4 px-4 text-right">Settings</th>
+                                </tr>
+                            </thead>
+                            <tbody id="activeOrganizersTbody" class="text-sm font-medium text-slate-700">
+                                <tr><td colspan="4" class="py-10 text-center italic text-gray-400">Loading active team...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+
+            <!-- Event Approvals (Unified lifecycle) -->
+            <div id="approvals" class="section hidden animate-in space-y-8">
+                <!-- Tab Switching Logic -->
+                <div class="flex items-center gap-2 bg-slate-100/50 p-1.5 rounded-2xl w-fit border border-slate-200/50">
+                    <button onclick="toggleApprovalTab('pending')" id="tab-pending" class="px-6 py-2.5 rounded-xl font-black text-xs uppercase tracking-widest transition-all bg-white text-primary shadow-sm border border-slate-200">
+                        Pending <span id="pendingCount" class="ml-2 px-2 py-0.5 bg-blue-50 text-blue-600 rounded-md text-[9px]">0</span>
+                    </button>
+                    <button onclick="toggleApprovalTab('approved')" id="tab-approved" class="px-6 py-2.5 rounded-xl font-black text-xs uppercase tracking-widest transition-all text-slate-400 hover:text-slate-600">
+                        Approved Hub
+                    </button>
+                </div>
+                
+                <!-- Error Banner -->
+                <div id="errorBanner" class="hidden p-4 bg-red-50 border border-red-100 rounded-2xl flex items-center justify-between gap-3 text-red-600 animate-in fade-in slide-in-from-top-4 duration-300">
+                    <div class="flex items-center gap-3">
+                        <i data-lucide="alert-triangle" class="w-5 h-5"></i>
+                        <p id="errorText" class="text-[10px] font-black uppercase tracking-widest leading-relaxed"></p>
+                    </div>
+                    <button onclick="document.getElementById('errorBanner').classList.add('hidden')" class="p-2 hover:bg-red-100 rounded-lg transition-colors">
+                        <i data-lucide="x" class="w-4 h-4"></i>
+                    </button>
+                </div>
+
+                <div id="approvalsList" class="space-y-8">
+                    <div class="py-20 text-center text-gray-400 font-bold italic bg-white rounded-3xl border border-gray-100">
+                        <i data-lucide="calendar" class="h-10 w-10 mx-auto mb-4 opacity-20"></i>
+                        Initializing event audit stream...
+                    </div>
+                </div>
+            </div>
+
+
+            <!-- Manage Culturals Section -->
+            <div id="culturals" class="section hidden animate-in">
+                <div class="grid grid-cols-1 lg:grid-cols-[1fr_2fr] gap-10">
+                    <!-- Create Cultural Form -->
+                    <div class="bg-white rounded-[2.5rem] p-10 shadow-sm border border-slate-100 h-fit">
+                        <h3 class="text-2xl font-black text-primary mb-8">Deploy Cultural Unit</h3>
+                        <form onsubmit="handleCulturalSubmit(event)" class="space-y-6">
+                            <div class="space-y-2">
+                                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Event Title</label>
+                                <input type="text" id="cultTitle" required placeholder="Euphoria Music Fest" class="w-full border-b border-slate-100 py-3 font-bold text-slate-700 focus:border-primary outline-none transition-all">
+                            </div>
+                            <div class="grid grid-cols-2 gap-6">
+                                <div class="space-y-2">
+                                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Ticket Price (₹)</label>
+                                    <input type="number" id="cultPrice" required value="0" class="w-full border-b border-slate-100 py-3 font-bold text-slate-700 focus:border-primary outline-none transition-all">
+                                </div>
+                                <div class="space-y-2">
+                                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Initial Inventory</label>
+                                    <input type="number" id="cultTickets" required placeholder="500" class="w-full border-b border-slate-100 py-3 font-bold text-slate-700 focus:border-primary outline-none transition-all">
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-2 gap-6">
+                                <div class="space-y-2">
+                                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Event Date</label>
+                                    <input type="datetime-local" id="cultDate" required class="w-full border-b border-slate-100 py-3 font-bold text-slate-700 focus:border-primary outline-none transition-all">
+                                </div>
+                                <div class="space-y-2">
+                                    <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Booking Deadline</label>
+                                    <input type="datetime-local" id="cultDeadline" required class="w-full border-b border-slate-100 py-3 font-bold text-slate-700 focus:border-primary outline-none transition-all">
+                                </div>
+                            </div>
+                            <div class="space-y-2">
+                                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Location / Stage</label>
+                                <input type="text" id="cultVenue" required placeholder="Main Auditorium" class="w-full border-b border-slate-100 py-3 font-bold text-slate-700 focus:border-primary outline-none transition-all">
+                            </div>
+
+                            <!-- Ticket Style Selection -->
+                            <div class="space-y-4">
+                                <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Select Ticket Theme</label>
+                                <div class="grid grid-cols-4 gap-4">
+                                    <div onclick="selectTemplate('classic_purple')" id="tpl_classic_purple" class="template-card border-2 border-purple-600 bg-purple-50 p-4 rounded-xl cursor-pointer transition-all text-center">
+                                        <div class="w-full h-8 bg-purple-600 rounded mb-2"></div>
+                                        <p class="text-[8px] font-black text-purple-900 uppercase">Classic Purple</p>
+                                    </div>
+                                    <div onclick="selectTemplate('midnight_gold')" id="tpl_midnight_gold" class="template-card border-2 border-slate-100 p-4 rounded-xl cursor-pointer transition-all text-center">
+                                        <div class="w-full h-8 bg-indigo-950 rounded mb-2"></div>
+                                        <p class="text-[8px] font-black text-slate-500 uppercase">Midnight Gold</p>
+                                    </div>
+                                    <div onclick="selectTemplate('cyber_blue')" id="tpl_cyber_blue" class="template-card border-2 border-slate-100 p-4 rounded-xl cursor-pointer transition-all text-center">
+                                        <div class="w-full h-8 bg-slate-900 rounded mb-2"></div>
+                                        <p class="text-[8px] font-black text-slate-500 uppercase">Cyber Blue</p>
+                                    </div>
+                                    <div onclick="selectTemplate('regal_gold')" id="tpl_regal_gold" class="template-card border-2 border-slate-100 p-4 rounded-xl cursor-pointer transition-all text-center">
+                                        <div class="w-full h-8 bg-amber-600 rounded mb-2"></div>
+                                        <p class="text-[8px] font-black text-slate-500 uppercase">Regal Gold</p>
+                                    </div>
+                                </div>
+                                <input type="hidden" id="selectedTemplate" value="classic_purple">
+                            </div>
+
+                            <!-- Ticket Style Preview -->
+                            <div class="p-6 bg-slate-50 rounded-[1.5rem] border border-slate-100">
+                                <p class="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Live Branded Ticket Preview</p>
+                                <div id="ticketPreview" class="bg-white rounded-xl border-t-4 border-purple-600 p-5 shadow-sm transition-all">
+                                    <div class="flex justify-between items-start mb-4">
+                                        <div>
+                                            <h4 id="previewHeader" class="text-xs font-black text-purple-900 leading-none uppercase">Admission Ticket</h4>
+                                            <p id="previewSub" class="text-[8px] font-bold text-slate-400 uppercase mt-1">CampusHub Arts Division</p>
+                                        </div>
+                                        <div id="previewIcon" class="h-8 w-8 bg-purple-50 rounded text-purple-600 flex items-center justify-center">
+                                            <i data-lucide="ticket" class="w-4 h-4"></i>
+                                        </div>
+                                    </div>
+                                    <div class="space-y-2">
+                                        <div class="h-2 w-24 bg-slate-100 rounded"></div>
+                                        <div class="h-2 w-16 bg-slate-50 rounded"></div>
+                                    </div>
+                                    <div class="mt-4 pt-4 border-t border-dashed border-slate-100 flex justify-between items-center text-[7px] font-black text-slate-400 uppercase">
+                                        <span>Single Entry</span>
+                                        <span>Verify ID at Gate <i data-lucide="qr-code" class="w-2 h-2 inline ml-1"></i></span>
+                                    </div>
+                                </div>
+                            </div>
+                            <button type="submit" class="w-full py-5 bg-primary text-white rounded-2xl font-black text-sm shadow-xl shadow-blue-900/10 hover:bg-black transition-all">DEPLOY TICKETS</button>
+                        </form>
+                    </div>
+
+                    <!-- Cultural Units & Sales Tracking -->
+                    <div class="space-y-8">
+                        <div class="bg-white rounded-[2.5rem] p-10 shadow-sm border border-slate-100">
+                            <h3 class="text-2xl font-black text-primary mb-8">Active Cultural Units</h3>
+                            <div id="cultGrid" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <!-- Cultural Cards will be injected here -->
+                                <p class="text-slate-400 italic text-sm">No cultural units active.</p>
+                            </div>
+                        </div>
+
+                        <!-- Ticket Sales Records -->
+                        <div class="bg-white rounded-[2.5rem] p-10 shadow-sm border border-slate-100">
+                             <div class="flex items-center justify-between mb-8">
+                                <h3 class="text-2xl font-black text-primary">Ticket Sales Log</h3>
+                                <button onclick="loadCulturalBookings()" class="p-2 hover:bg-slate-50 rounded-xl transition-all">
+                                    <i data-lucide="rotate-cw" class="w-5 h-5 text-slate-400"></i>
+                                </button>
+                             </div>
+                             <div class="overflow-x-auto">
+                                <table class="w-full text-left">
+                                    <thead>
+                                        <tr class="border-b border-slate-50 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                                            <th class="pb-4">Cultural Unit</th>
+                                            <th class="pb-4">Student Info</th>
+                                            <th class="pb-4">Status</th>
+                                            <th class="pb-4">Amount</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="cultSalesList" class="divide-y divide-slate-50">
+                                        <!-- Sales will be injected here -->
+                                    </tbody>
+                                </table>
+                             </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Hall Inventory Section -->
+            <div id="inventory" class="section hidden animate-in space-y-6">
+                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6" id="inventoryGrid">
+                    <!-- Hall cards will be loaded dynamically -->
+                    <div class="col-span-full py-20 text-center text-gray-400 font-bold italic">
+                        <i data-lucide="home" class="h-10 w-10 mx-auto mb-4 opacity-20"></i>
+                         No venues registered in current system.
+                    </div>
+                 </div>
+            </div>
+
+            <!-- Event Reports Section -->
+            <div id="reports" class="section hidden animate-in space-y-6">
+                <!-- Search & Filter Header -->
+                <div class="bg-white rounded-[2rem] p-8 border border-slate-100 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6">
+                    <div>
+                        <h2 class="text-2xl font-black text-slate-900 tracking-tight">Intelligence Reports</h2>
+                        <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Export attendance & venue analytics</p>
+                    </div>
+                    <div class="relative flex-1 max-w-md">
+                        <i data-lucide="search" class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300"></i>
+                        <input type="text" id="reportSearch" placeholder="Search events for dossiers..." oninput="filterReports(this.value)" class="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold text-slate-700 focus:bg-white focus:border-primary focus:ring-4 focus:ring-primary/5 transition-all outline-none">
+                    </div>
+                </div>
+
+                <!-- Reports Table -->
+                <div class="bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-slate-50/50 border-b border-slate-100 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                                    <th class="py-5 px-8">Event Brief</th>
+                                    <th class="py-5 px-8">Location Hub</th>
+                                    <th class="py-5 px-8">Intel Status</th>
+                                    <th class="py-5 px-8 text-right">Dossier Export</th>
+                                </tr>
+                            </thead>
+                            <tbody id="reportsTbody" class="divide-y divide-slate-50">
+                                <tr>
+                                    <td colspan="4" class="py-20 text-center">
+                                        <div class="animate-pulse">
+                                            <i data-lucide="database" class="w-10 h-10 text-slate-200 mx-auto mb-4"></i>
+                                            <p class="text-xs font-bold text-slate-400 uppercase tracking-widest">Querying event intelligence...</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Image Lightbox Modal -->
+            <div id="imageLightbox" class="fixed inset-0 bg-slate-900/95 backdrop-blur-md z-[100] hidden flex items-center justify-center p-4" onclick="closeLightbox()">
+                <button class="absolute top-8 right-8 p-4 bg-white/10 hover:bg-white/20 text-white rounded-2xl transition-all">
+                    <i data-lucide="x" class="w-8 h-8"></i>
+                </button>
+                <img id="lightboxImg" src="" class="max-w-full max-h-full rounded-2xl shadow-2xl object-contain animate-in" onclick="event.stopPropagation()">
+            </div>
+
+        </main>
+    </div>
+
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        lucide.createIcons();
+
+        function selectTemplate(tpl) {
+            document.getElementById('selectedTemplate').value = tpl;
+            
+            // UI Update
+            document.querySelectorAll('.template-card').forEach(c => {
+                c.classList.remove('border-purple-600', 'bg-purple-50', 'border-indigo-950', 'bg-indigo-50', 'border-slate-900', 'bg-slate-100');
+                c.classList.add('border-slate-100');
+                c.querySelector('p').classList.remove('text-purple-900', 'text-indigo-900', 'text-slate-900');
+                c.querySelector('p').classList.add('text-slate-500');
+            });
+
+            const card = document.getElementById(`tpl_${tpl}`);
+            const preview = document.getElementById('ticketPreview');
+            const pHeader = document.getElementById('previewHeader');
+            const pSub = document.getElementById('previewSub');
+            const pIcon = document.getElementById('previewIcon');
+
+            if(tpl === 'classic_purple') {
+                card.classList.replace('border-slate-100', 'border-purple-600');
+                card.classList.add('bg-purple-50');
+                card.querySelector('p').classList.replace('text-slate-500', 'text-purple-900');
+                preview.className = "bg-white rounded-xl border-t-4 border-purple-600 p-5 shadow-sm transition-all";
+                pHeader.className = "text-xs font-black text-purple-900 leading-none uppercase";
+                pSub.textContent = "CampusHub Arts Division";
+                pIcon.className = "h-8 w-8 bg-purple-50 rounded text-purple-600 flex items-center justify-center";
+            } else if(tpl === 'midnight_gold') {
+                card.classList.replace('border-slate-100', 'border-indigo-950');
+                card.classList.add('bg-indigo-50');
+                card.querySelector('p').classList.replace('text-slate-500', 'text-indigo-900');
+                preview.className = "bg-white rounded-xl border-t-4 border-indigo-950 p-5 shadow-sm transition-all";
+                pHeader.className = "text-xs font-black text-indigo-950 leading-none uppercase";
+                pSub.textContent = "CampusHub Royal Society";
+                pIcon.className = "h-8 w-8 bg-indigo-50 rounded text-indigo-900 flex items-center justify-center";
+            } else if(tpl === 'cyber_blue') {
+                card.classList.replace('border-slate-100', 'border-slate-900');
+                card.classList.add('bg-slate-100');
+                card.querySelector('p').classList.replace('text-slate-500', 'text-slate-900');
+                preview.className = "bg-white rounded-xl border-t-4 border-slate-900 p-5 shadow-sm transition-all";
+                pHeader.className = "text-xs font-black text-slate-900 leading-none uppercase";
+                pSub.textContent = "CampusHub Tech Beats";
+                pIcon.className = "h-8 w-8 bg-blue-50 rounded text-blue-900 flex items-center justify-center";
+            } else if(tpl === 'regal_gold') {
+                card.classList.replace('border-slate-100', 'border-amber-600');
+                card.classList.add('bg-amber-50');
+                card.querySelector('p').classList.replace('text-slate-500', 'text-amber-900');
+                preview.className = "bg-white rounded-xl border-t-4 border-amber-600 p-5 shadow-sm transition-all";
+                pHeader.className = "text-xs font-black text-amber-900 leading-none uppercase";
+                pSub.textContent = "CampusHub Elite Events";
+                pIcon.className = "h-8 w-8 bg-amber-50 rounded text-amber-700 flex items-center justify-center";
+            }
+            lucide.createIcons();
+        }
+        
+        function getDriveDirectLink(url) {
+            if (!url) return 'https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?auto=format&fit=crop&q=80&w=400';
+            let finalUrl = url;
+            if (url.includes('drive.google.com')) {
+                const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/) || url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+                if (match && match[1]) {
+                    finalUrl = `https://lh3.googleusercontent.com/d/${match[1]}`;
+                }
+            }
+            console.log("Resolved Admin View URL:", finalUrl);
+            return finalUrl;
+        }
+
+        function showSection(sectionId) {
+            // Save state
+            localStorage.setItem('activeAdminSection', sectionId);
+
+            document.querySelectorAll('.section').forEach(s => s.classList.add('hidden'));
+            const targetSection = document.getElementById(sectionId);
+            if(targetSection) {
+                targetSection.classList.remove('hidden');
+            }
+
+            // Update UI titles based on section
+            const titles = {
+                'monitoring': 'System Monitoring',
+                'approvals': 'Event Approval Requests',
+                'organizers': 'Organizer Registrations',
+                'culturals': 'Manage Cultural Units',
+                'inventory': 'Hall & Venue Inventory',
+                'reports': 'Event Analysis Reports'
+            };
+            document.getElementById('sectionTitle').textContent = titles[sectionId] || 'Admin Dashboard';
+
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('bg-blue-50', 'text-primary', 'border-primary');
+                if(btn.dataset.section === sectionId) {
+                    btn.classList.add('bg-blue-50', 'text-primary', 'border-primary');
+                }
+            });
+
+            if (sectionId === 'approvals') {
+                loadPendingEvents();
+            }
+            if (sectionId === 'monitoring') {
+                loadCalendar();
+            }
+            if (sectionId === 'inventory') loadInventory();
+            if (sectionId === 'culturals') {
+                loadCulturals();
+                loadCulturalBookings();
+            }
+            if (sectionId === 'organizers') {
+                loadPendingOrganizers();
+                loadActiveOrganizers();
+            }
+            if (sectionId === 'reports') loadReports();
+        }
+
+        async function loadCulturals() {
+            const grid = document.getElementById('cultGrid');
+            try {
+                const res = await AuthGuard.secureFetch('/api/culturals/list');
+                const data = await res.json();
+                if(res.ok) {
+                    if(data.length === 0) {
+                        grid.innerHTML = '<p class="text-slate-400 italic text-sm col-span-full text-center py-10">No cultural units deployed yet.</p>';
+                        return;
+                    }
+                    grid.innerHTML = data.map(c => `
+                        <div class="p-6 bg-slate-50/50 rounded-3xl border border-slate-100 flex flex-col justify-between">
+                            <div>
+                                <div class="flex justify-between items-start mb-4">
+                                    <h4 class="font-black text-slate-900 group-hover:text-primary transition-colors">${c.title}</h4>
+                                    <span class="px-2 py-0.5 bg-white border border-slate-200 text-slate-500 rounded-lg text-[8px] font-black uppercase tracking-widest">${c.club_name}</span>
+                                </div>
+                                <div class="space-y-2 mb-6 text-[10px] font-bold text-slate-500">
+                                    <p class="flex items-center gap-2"><i data-lucide="map-pin" class="w-3 h-3 text-slate-300"></i> ${c.venue}</p>
+                                    <p class="flex items-center gap-2"><i data-lucide="clock" class="w-3 h-3 text-slate-300"></i> <span class="text-slate-900">${new Date(c.event_date).toLocaleString([], {day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit'})}</span></p>
+                                    <p class="flex items-center gap-2"><i data-lucide="alert-circle" class="w-3 h-3 text-amber-500"></i> Deadline: <span class="text-amber-600">${new Date(c.booking_deadline).toLocaleString([], {day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit'})}</span></p>
+                                    <p class="flex items-center gap-2"><i data-lucide="ticket" class="w-3 h-3 text-emerald-400"></i> ${c.available_tickets} / ${c.total_tickets} Tickets Left</p>
+                                </div>
+                            </div>
+                            <div class="pt-4 border-t border-slate-100 flex gap-2">
+                                <button onclick="increaseTickets(${c.id}, ${c.total_tickets})" class="flex-1 py-3 bg-white border border-slate-200 text-slate-600 rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-slate-50 transition-all">Increase Inventory</button>
+                                <button onclick="downloadCulturalBookers(${c.id}, '${c.title.replace(/'/g, "\\'")}')" class="px-4 py-3 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-100 transition-all shadow-sm" title="Download Attendee List">
+                                    <i data-lucide="download" class="w-4 h-4"></i>
+                                </button>
+                                <div class="px-4 py-3 bg-emerald-50 text-emerald-600 rounded-xl font-black text-[9px]">₹${c.price}</div>
+                            </div>
+                        </div>
+                    `).join('');
+                    lucide.createIcons();
+                }
+            } catch(e) { console.error(e); }
+        }
+
+        async function handleCulturalSubmit(e) {
+            e.preventDefault();
+            const payload = {
+                title: document.getElementById('cultTitle').value,
+                price: document.getElementById('cultPrice').value,
+                total_tickets: document.getElementById('cultTickets').value,
+                event_date: document.getElementById('cultDate').value,
+                booking_deadline: document.getElementById('cultDeadline').value,
+                venue: document.getElementById('cultVenue').value,
+                template_id: document.getElementById('selectedTemplate').value
+            };
+
+            try {
+                const res = await AuthGuard.secureFetch('/api/culturals/create', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                if(res.ok) {
+                    alert('Cultural Unit Deployed Successfully!');
+                    e.target.reset();
+                    loadCulturals();
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            } catch(e) { alert('Connection error'); }
+        }
+
+        async function increaseTickets(id, currentTotal) {
+            const add = prompt(`Current Total: ${currentTotal}. How many MORE tickets to add?`);
+            if(!add || isNaN(add)) return;
+            const newTotal = currentTotal + parseInt(add);
+
+            try {
+                const res = await AuthGuard.secureFetch('/api/culturals/update-tickets', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ cultural_id: id, total_tickets: newTotal })
+                });
+                if(res.ok) {
+                    alert('Inventory Updated!');
+                    loadCulturals();
+                } else {
+                    const data = await res.json();
+                    alert(data.error);
+                }
+            } catch(e) { alert('Update failed'); }
+        }
+
+        async function loadCulturalBookings() {
+            const list = document.getElementById('cultSalesList');
+            try {
+                const res = await AuthGuard.secureFetch('/api/culturals/bookings');
+                const data = await res.json();
+                if(res.ok) {
+                    if(data.length === 0) {
+                        list.innerHTML = '<tr><td colspan="4" class="py-10 text-center text-slate-400 italic text-xs">No tickets sold yet.</td></tr>';
+                        return;
+                    }
+                    list.innerHTML = data.map(b => `
+                        <tr>
+                            <td class="py-4">
+                                <p class="text-xs font-black text-slate-900">${b.cultural_title}</p>
+                                <p class="text-[9px] font-bold text-slate-400">${new Date(b.booked_at).toLocaleString()}</p>
+                            </td>
+                            <td class="py-4">
+                                <p class="text-xs font-bold text-slate-700">${b.student_name}</p>
+                                <p class="text-[9px] font-black text-primary uppercase tracking-widest">${b.reg_no}</p>
+                                <p class="text-[9px] text-slate-400 italic">${b.email} | ${b.college_email}</p>
+                            </td>
+                            <td class="py-4">
+                                <span class="px-2 py-1 ${b.status === 'confirmed' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'} rounded-lg text-[8px] font-black uppercase tracking-widest">
+                                    ${b.status}
+                                </span>
+                            </td>
+                            <td class="py-4 text-xs font-black text-slate-900">₹${b.amount_paid}</td>
+                        </tr>
+                    `).join('');
+                }
+            } catch(e) { console.error(e); }
+        }
+
+        async function downloadCulturalBookers(id, title) {
+            try {
+                // Using standard fetch since we need the blob/attachment headers clearly
+                const res = await AuthGuard.secureFetch(`/api/culturals/export/${id}`, {
+                    method: 'GET'
+                });
+                
+                if (!res.ok) {
+                    const error = await res.json();
+                    alert(error.error || "Export failed");
+                    return;
+                }
+
+                const blob = await res.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `Attendees_${title.replace(/ /g, '_')}.xlsx`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                a.remove();
+            } catch (e) {
+                alert("Download failed: " + e.message);
+            }
+        }
+
+        let myClubs = [];
+        async function fetchMyClubs() {
+            try {
+                const res = await AuthGuard.secureFetch('/api/admin/clubs', {
+                    headers: {  }
+                });
+                myClubs = await res.json();
+            } catch(e) { console.warn("Clubs fetch failed", e); }
+        }
+
+        async function loadPendingOrganizers() {
+            if (myClubs.length === 0) await fetchMyClubs();
+            const tbody = document.getElementById('organizerTbody');
+            tbody.innerHTML = '<tr><td colspan="5" class="py-10 text-center italic text-gray-400">Loading pending requests...</td></tr>';
+            
+            try {
+                const response = await AuthGuard.secureFetch('/api/admin/organizers/pending', {
+                    headers: {  }
+                });
+                const data = await response.json();
+                
+                if(!response.ok) throw new Error(data.error || "Failed to fetch");
+                
+                // Strict filter to only this admin's clubs
+                const filteredData = data.filter(org => myClubs.includes(org.organization_name));
+
+                if(filteredData.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4" class="py-10 text-center italic text-gray-400 font-bold text-[#64748b]">No pending organizers for your club.</td></tr>';
+                    updateNotificationBadge(0);
+                    return;
+                }
+                
+                updateNotificationBadge(filteredData.length);
+                lucide.createIcons();
+                
+                tbody.innerHTML = filteredData.map(org => `
+                    <tr class="border-b border-slate-50 hover:bg-slate-50 transition-colors">
+                        <td class="py-4 px-4">
+                            <div class="font-bold text-[#1e3a8a]">${org.full_name}</div>
+                            <div class="text-[10px] text-gray-400 font-black uppercase tracking-widest">${org.organization_name} | ${org.reg_no}</div>
+                        </td>
+                        <td class="py-4 px-4 text-sm text-gray-600">${org.email}<br><span class="text-xs text-gray-400 font-bold tracking-tight">${org.phone_number}</span></td>
+                        <td class="py-4 px-4 text-xs font-black text-slate-400 uppercase tracking-tighter">${new Date(org.created_at).toLocaleDateString()}</td>
+                        <td class="py-4 px-4 text-right whitespace-nowrap">
+                            <button onclick="processOrg(${org.id}, 'approve')" class="px-4 py-2 bg-green-500 hover:bg-green-600 text-white font-bold rounded-xl text-xs transition-all shadow-lg shadow-green-500/20 mr-2"><i data-lucide="check" class="w-4 h-4 inline-block -mt-0.5"></i></button>
+                            <button onclick="processOrg(${org.id}, 'reject')" class="px-4 py-2 bg-red-100 hover:bg-red-500 hover:text-white text-red-600 font-bold rounded-xl text-xs transition-all shadow-lg shadow-red-500/10"><i data-lucide="x" class="w-4 h-4 inline-block -mt-0.5"></i></button>
+                        </td>
+                    </tr>
+                `).join('');
+                lucide.createIcons();
+            } catch(e) {
+                tbody.innerHTML = `<tr><td colspan="4" class="py-10 text-center text-red-500 font-bold">${e.message}</td></tr>`;
+            }
+        }
+
+        async function loadActiveOrganizers() {
+            if (myClubs.length === 0) await fetchMyClubs();
+            const tbody = document.getElementById('activeOrganizersTbody');
+            tbody.innerHTML = '<tr><td colspan="4" class="py-10 text-center italic text-gray-400 text-sm">Loading active team...</td></tr>';
+            
+            try {
+                const response = await AuthGuard.secureFetch('/api/admin/organizers/active', {
+                    headers: {  }
+                });
+                const data = await response.json();
+                
+                if(!response.ok) throw new Error(data.error || "Failed to fetch");
+                
+                // Strict filter
+                const filteredData = data.filter(org => myClubs.includes(org.organization_name));
+
+                if(filteredData.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4" class="py-10 text-center italic text-gray-400 font-bold text-[#64748b]">No active members registered for your club.</td></tr>';
+                    return;
+                }
+                
+                tbody.innerHTML = filteredData.map(org => `
+                    <tr class="border-b border-slate-50 hover:bg-slate-50 transition-colors">
+                        <td class="py-4 px-4">
+                            <div class="font-bold text-[#1e3a8a]">${org.full_name}</div>
+                            <div class="text-[10px] text-gray-400 font-black uppercase tracking-widest">${org.organization_name} | ${org.reg_no}</div>
+                        </td>
+                        <td class="py-4 px-4 text-xs font-bold text-gray-600 italic underline decoration-blue-100">${org.email}</td>
+                        <td class="py-4 px-4"><span class="px-3 py-1 bg-green-50 text-green-700 font-black rounded-lg text-[10px] border border-green-100 uppercase tracking-tighter">Approved Member</span></td>
+                        <td class="py-4 px-4 text-right">
+                             <button onclick="processOrg(${org.id}, 'reject', true)" class="text-red-400 hover:text-red-600 text-xs font-black uppercase tracking-tighter transition-colors">Revoke Access</button>
+                        </td>
+                    </tr>
+                `).join('');
+                lucide.createIcons();
+            } catch(e) {
+                tbody.innerHTML = `<tr><td colspan="4" class="py-10 text-center text-red-500 font-bold">${e.message}</td></tr>`;
+            }
+        }
+
+        async function processOrg(id, action, isRevoke = false) {
+            const verb = isRevoke ? 'REVOKE' : action.toUpperCase();
+            if(!confirm(`Are you sure you want to ${verb} this organizer?`)) return;
+            
+            try {
+                // If it's a revoke, use the reject route but we might need a general route later
+                // For now, reject just flips status to 'rejected' which is safe for active users too
+                const response = await AuthGuard.secureFetch(`/api/admin/organizers/${id}/${action}`, {
+                    method: 'POST',
+                    headers: {  }
+                });
+                const data = await response.json();
+                if(response.ok) {
+                    alert('Success: ' + data.message);
+                    loadPendingOrganizers();
+                    loadActiveOrganizers(); // Refresh both
+                    fetchNotificationCount(); 
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            } catch(e) {
+                alert('Connection error');
+            }
+        }
+
+        let pendingTasks = { orgs: 0, events: 0 };
+        async function fetchNotificationCount() {
+            try {
+                const [orgRes, evtRes] = await Promise.all([
+                    AuthGuard.secureFetch('/api/admin/organizers/pending', { headers: {  } }),
+                    AuthGuard.secureFetch('/api/admin/events/pending', { headers: {  } })
+                ]);
+                
+                const orgs = await orgRes.json();
+                const evts = await evtRes.json();
+                
+                pendingTasks.orgs = Array.isArray(orgs) ? orgs.length : 0;
+                pendingTasks.events = Array.isArray(evts) ? evts.length : 0;
+                
+                updateNotificationBadge(pendingTasks.orgs + pendingTasks.events);
+            } catch(e) { console.warn("Notif fetch failed", e); }
+        }
+
+        function handleNotificationClick() {
+            // Prioritize organizers since they are the gateway for events
+            if (pendingTasks.orgs > 0) {
+                showSection('organizers');
+            } else if (pendingTasks.events > 0) {
+                showSection('approvals');
+            } else {
+                // Default to first pending task section if overall count is 0
+                showSection('approvals');
+            }
+        }
+
+        function updateNotificationBadge(count) {
+            const badge = document.getElementById('notifBadge');
+            if(count > 0) {
+                badge.textContent = count;
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+            }
+        }
+
+        let allReportsData = [];
+        async function loadReports() {
+            const tbody = document.getElementById('reportsTbody');
+            try {
+                const res = await AuthGuard.secureFetch('/api/admin/reports/list-all');
+                const data = await res.json();
+                if(res.ok) {
+                    allReportsData = data;
+                    renderReports(data);
+                }
+            } catch(e) { console.error(e); }
+        }
+
+        function renderReports(data) {
+            const tbody = document.getElementById('reportsTbody');
+            if(!data || data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" class="py-10 text-center font-bold text-slate-400 italic">No events found in registry.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = data.map(e => `
+                <tr class="hover:bg-slate-50/50 transition-colors group">
+                    <td class="py-5 px-8">
+                        <div class="font-black text-slate-900 group-hover:text-primary transition-colors">${e.title}</div>
+                        <div class="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">
+                            ${new Date(e.start_date).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}
+                        </div>
+                    </td>
+                    <td class="py-5 px-8">
+                        <div class="flex items-center gap-2 text-xs font-bold text-slate-600">
+                            <i data-lucide="map-pin" class="w-3.5 h-3.5 text-slate-300"></i> ${e.venue_name}
+                        </div>
+                    </td>
+                    <td class="py-5 px-8">
+                        <div class="flex items-center gap-2">
+                             <span class="px-2.5 py-1 bg-blue-50 text-blue-600 rounded-lg text-[9px] font-black uppercase tracking-tighter border border-blue-100">
+                                 ${e.total_registrations} Intel Logs
+                             </span>
+                        </div>
+                    </td>
+                    <td class="py-5 px-8 text-right">
+                        <button onclick="downloadEventReport(${e.id}, '${e.title.replace(/'/g, "\\'")}')" class="h-10 w-10 bg-slate-900 border-b-2 border-black text-white rounded-xl flex items-center justify-center hover:bg-black hover:-translate-y-0.5 active:translate-y-0 transition-all shadow-sm shadow-black/10">
+                            <i data-lucide="download" class="w-4 h-4"></i>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+            lucide.createIcons();
+        }
+
+        function filterReports(query) {
+            const filtered = allReportsData.filter(e => e.title.toLowerCase().includes(query.toLowerCase()) || e.venue_name.toLowerCase().includes(query.toLowerCase()));
+            renderReports(filtered);
+        }
+
+        async function downloadEventReport(id, title) {
+            try {
+                Swal.fire({
+                    title: 'Generating Dossier',
+                    text: 'Extracting intelligence logs...',
+                    showConfirmButton: false,
+                    allowOutsideClick: false,
+                    didOpen: () => { Swal.showLoading(); }
+                });
+
+                const res = await AuthGuard.secureFetch(`/api/admin/reports/export/${id}`);
+                if (!res.ok) throw new Error("Export connection failure");
+
+                const blob = await res.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `Report_${title.replace(/ /g, '_')}.xlsx`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                a.remove();
+                Swal.close();
+            } catch(e) {
+                console.error(e);
+                Swal.fire('Export Failed', 'Unable to generate intelligence dossier at this time.', 'error');
+            }
+        }
+
+        let currentTab = 'pending';
+        function toggleApprovalTab(status) {
+            currentTab = status;
+            // Update UI
+            document.querySelectorAll('#approvals button[id^="tab-"]').forEach(btn => {
+                btn.classList.remove('bg-white', 'text-primary', 'shadow-sm', 'border', 'border-slate-200');
+                btn.classList.add('text-slate-400');
+            });
+            document.getElementById(`tab-${status}`).classList.add('bg-white', 'text-primary', 'shadow-sm', 'border', 'border-slate-200');
+            document.getElementById(`tab-${status}`).classList.remove('text-slate-400');
+            
+            loadPendingEvents();
+        }
+
+        async function loadPendingEvents() {
+            if (myClubs.length === 0) await fetchMyClubs();
+            const list = document.getElementById('approvalsList');
+            const status = currentTab;
+            
+            list.innerHTML = `<div class="py-20 text-center text-gray-400 font-bold italic bg-white rounded-3xl animate-pulse">Pulling ${status} event registry...</div>`;
+            
+            try {
+                const endpoint = status === 'pending' ? '/api/admin/events/pending' : '/api/admin/events/approved';
+                const res = await AuthGuard.secureFetch(endpoint, {
+                    headers: {  }
+                });
+                const events = await res.json();
+                
+                // Strict filter for pending, but allow global view for approved (as originally requested for cross-club oversight)
+                const filteredEvents = status === 'pending' ? events.filter(e => myClubs.includes(e.club_name)) : events;
+
+                if(res.ok) {
+                    if(status === 'pending') document.getElementById('pendingCount').textContent = filteredEvents.length;
+
+                    if(filteredEvents.length === 0) {
+                        const clubSuffix = status === 'pending' ? ' for your club' : '';
+                        list.innerHTML = `<div class="py-20 text-center text-gray-400 font-bold italic bg-white rounded-3xl">No ${status} events registered${clubSuffix}.</div>`;
+                        return;
+                    }
+                    list.innerHTML = filteredEvents.map(e => `
+                        <div class="bg-white rounded-[1.5rem] border border-slate-100 shadow-sm overflow-hidden flex flex-col lg:flex-row group min-h-[220px]">
+                            <!-- Compact Poster Panel -->
+                            <div class="w-full lg:w-[140px] shrink-0 relative bg-slate-100 overflow-hidden cursor-zoom-in group/poster" onclick="openLightbox(this.querySelector('img').src)">
+                                <img src="${getDriveDirectLink(e.poster_url)}" class="w-full h-full object-cover transition-transform duration-500 group-hover/poster:scale-110">
+                                <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent ${status === 'approved' ? 'from-emerald-950/60' : ''}"></div>
+                                 <div class="absolute bottom-3 left-3 flex items-center gap-2">
+                                      <div class="h-2 w-2 rounded-full ${status === 'approved' ? 'bg-green-400' : (e.hall_available ? 'bg-green-400 shadow-[0_0_8px_#4ade80]' : 'bg-red-400')}"></div>
+                                      ${status === 'approved' ? '<span class="text-[7px] font-black bg-emerald-500 text-white px-2 py-0.5 rounded-full tracking-widest uppercase">Live</span>' : ''}
+                                 </div>
+                            </div>
+
+                            <!-- Industrial-Dense Data Panel -->
+                            <div class="flex-1 p-6 flex flex-col justify-between bg-white">
+                                <div class="space-y-4">
+                                    <div class="flex justify-between items-start">
+                                        <div class="space-y-1">
+                                            <h3 class="text-xl font-black text-slate-900 tracking-tight">${e.title}</h3>
+                                            <p class="text-[9px] font-black uppercase text-slate-400 tracking-widest italic">
+                                                ${e.club_name} | Created By: ${e.organizer_name || 'Admin'} 
+                                                ${status === 'approved' ? `| Approved By: <span class="text-emerald-600">${e.approved_by_name || 'System'}</span>` : ''}
+                                            </p>
+                                        </div>
+                                        <div class="flex flex-col items-end gap-1">
+                                            <span class="px-2 py-1 bg-slate-50 text-slate-500 rounded-lg font-black text-[8px] border border-slate-100 uppercase tracking-widest">#00${e.id}</span>
+                                            ${(status === 'pending' && !e.hall_available) ? `<span class="text-[8px] font-black text-red-500 uppercase tracking-tighter">CONFLICT ERROR</span>` : ''}
+                                        </div>
+                                    </div>
+
+                                    <div class="grid grid-cols-2 lg:grid-cols-6 gap-4 p-4 bg-slate-50/50 rounded-xl border border-slate-100">
+                                        <div><p class="text-[7px] font-black text-slate-400 uppercase tracking-widest mb-1">Venue</p><p class="font-bold text-[10px] text-primary truncate"><i data-lucide="map-pin" class="w-2.5 h-2.5 inline mr-1"></i>${e.hall_name}</p></div>
+                                        <div class="col-span-1 lg:col-span-1"><p class="text-[7px] font-black text-slate-400 uppercase tracking-widest mb-1">Event Window</p><p class="font-bold text-[9px] text-slate-600 tracking-tighter"><i data-lucide="clock" class="w-2.5 h-2.5 inline mr-1 opacity-50"></i>${new Date(e.start_date).toLocaleString([], {day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit'})} ➜ ${new Date(e.end_date).toLocaleString([], {day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit'})}</p></div>
+                                        <div><p class="text-[7px] font-black text-slate-400 uppercase tracking-widest mb-1">Policy</p><p class="font-bold text-[10px] text-slate-600">${e.female_mandatory ? '🚨 1 Female' : '✅ General'}</p></div>
+                                        <div><p class="text-[7px] font-black text-slate-400 uppercase tracking-widest mb-1">Reg. Deadline</p><p class="font-bold text-[10px] text-red-600 italic border-b border-red-50">${new Date(e.reg_deadline).toLocaleString([], {day:'2-digit', month:'short'})}</p></div>
+                                        <div><p class="text-[7px] font-black text-slate-400 uppercase tracking-widest mb-1">Team Size</p><p class="font-bold text-[10px] text-slate-700">${e.min_team_size && e.min_team_size != e.team_size ? e.min_team_size + '-' + e.team_size : e.team_size || 1} Members</p></div>
+                                        <div><p class="text-[7px] font-black text-slate-400 uppercase tracking-widest mb-1">Registration</p><p class="font-black text-[10px] text-emerald-600">${e.reg_amount === 0 ? 'FREE' : '₹' + e.reg_amount}</p></div>
+                                    </div>
+
+                                    <div class="flex gap-4 items-center">
+                                         <div class="flex-1 relative ${status === 'approved' ? 'opacity-50 pointer-events-none' : ''}">
+                                            <input type="text" id="msg-${e.id}" 
+                                                class="w-full bg-slate-50 border border-slate-100 pl-4 pr-12 py-3 rounded-xl font-bold text-xs text-slate-700 outline-none focus:border-blue-300 transition-all" 
+                                                placeholder="Audit remarks..." value="${status === 'approved' ? 'Publicly authorized hall booking.' : (!e.hall_available ? 'Conflict detected.' : 'Validated. Ready for hall allocation.')}">
+                                            <button onclick="sendRemark(${e.id}, ${e.hall_available}, '${(e.alternative_halls || []).join(', ')}')" class="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-primary hover:text-blue-800 transition-all">
+                                                <i data-lucide="send" class="w-4 h-4"></i>
+                                            </button>
+                                         </div>
+                                         <button onclick="toggleBrief(${e.id})" class="p-3 bg-slate-50 text-slate-400 rounded-xl hover:bg-slate-100 transition-all flex items-center gap-2 group">
+                                            <i data-lucide="chevron-down" id="arrow-${e.id}" class="w-4 h-4 transition-transform"></i>
+                                            <span class="text-[8px] font-black uppercase tracking-widest hidden lg:block">Pitch Brief</span>
+                                         </button>
+                                         ${status === 'pending' ? `
+                                         <div class="flex gap-2">
+                                            <button onclick="processEvent(${e.id}, 'approved')" 
+                                                class="${e.hall_available ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-slate-300 cursor-not-allowed'} px-5 py-3 text-white font-black rounded-xl shadow-lg shadow-emerald-900/10 transition-all flex items-center justify-center gap-2 group text-[10px] uppercase tracking-tighter"
+                                                ${e.hall_available ? '' : 'disabled'}>
+                                                <i data-lucide="check" class="w-3.5 h-3.5"></i> Authorize
+                                            </button>
+                                            <button onclick="processEvent(${e.id}, 'rejected')" class="px-5 py-3 bg-white text-slate-400 font-bold rounded-xl border border-slate-200 hover:text-red-500 hover:bg-red-50 hover:border-red-100 transition-all group text-[10px] uppercase tracking-tighter">
+                                                <i data-lucide="x" class="w-3.5 h-3.5"></i> Decline
+                                            </button>
+                                         </div>
+                                         ` : `
+                                         <button onclick="processEvent(${e.id}, 'rejected')" class="px-5 py-3 bg-red-50 text-red-600 font-black rounded-xl border border-red-100 hover:bg-red-500 hover:text-white transition-all text-[10px] uppercase tracking-tighter flex items-center gap-2">
+                                            <i data-lucide="archive" class="w-3.5 h-3.5"></i> Revoke Hall
+                                         </button>
+                                         `}
+                                    </div>
+
+                                    <!-- Collapsible Pitch Brief -->
+                                    <div id="brief-${e.id}" class="hidden animate-in pt-4 border-t border-slate-50 space-y-4">
+                                         <div class="bg-indigo-50/30 p-5 rounded-2xl border border-indigo-100/50">
+                                            <p class="text-[8px] font-black text-indigo-400 uppercase tracking-widest mb-3 px-1">Internal Mission Briefing</p>
+                                            <p class="text-[11px] text-slate-600 leading-relaxed italic whitespace-pre-wrap">"${e.description || 'No description provided.'}"</p>
+                                         </div>
+
+                                         ${e.event_flow && e.event_flow.length > 0 ? `
+                                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                             <div class="p-5 bg-slate-50 rounded-2xl border border-slate-100">
+                                                 <p class="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-3">Event Structure</p>
+                                                 <div class="space-y-2">
+                                                     ${e.event_flow.map((s, i) => `<div class="flex gap-2 text-[10px] font-bold text-slate-600"><span class="text-primary">${i+1}.</span> ${s}</div>`).join('')}
+                                                 </div>
+                                             </div>
+                                             <div class="p-5 bg-slate-50 rounded-2xl border border-slate-100">
+                                                 <p class="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-3">Logistics & Amenities</p>
+                                                 <div class="flex flex-wrap gap-1.5 mb-3">
+                                                     ${(e.refreshments?.items || []).map(item => `<span class="px-2 py-1 bg-white border border-slate-200 text-slate-500 rounded-lg text-[9px] font-bold">${item}</span>`).join('')}
+                                                 </div>
+                                                 <p class="text-[9px] text-slate-400 italic">${e.refreshments?.notes || 'No special instructions.'}</p>
+                                             </div>
+                                         </div>
+                                         ` : ''}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('');
+                    lucide.createIcons();
+                }
+            } catch(e) { console.error(e); }
+        }
+
+        async function processEvent(id, action) {
+            const msgInput = document.getElementById(`msg-${id}`);
+            const msg = msgInput.value;
+            
+            if(!confirm(`Are you sure you want to MARK this event as ${action.toUpperCase()}?`)) return;
+
+            try {
+                const res = await AuthGuard.secureFetch(`/api/admin/events/${id}/process`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json',  },
+                    body: JSON.stringify({ action, message: msg })
+                });
+                
+                const data = await res.json();
+                
+                if(res.ok) {
+                    alert(`Event Successfully ${action}!`);
+                    document.getElementById('errorBanner').classList.add('hidden');
+                    loadPendingEvents();
+                } else {
+                    const banner = document.getElementById('errorBanner');
+                    const text = document.getElementById('errorText');
+                    text.textContent = data.error || 'Action failed';
+                    banner.classList.remove('hidden');
+                    banner.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            } catch(e) { 
+                const banner = document.getElementById('errorBanner');
+                const text = document.getElementById('errorText');
+                text.textContent = "Error processing event: " + e.message;
+                banner.classList.remove('hidden');
+            }
+        }
+
+        async function sendRemark(id, available, suggestions) {
+            const input = document.getElementById(`msg-${id}`);
+            let finalMsg = input.value;
+
+            // If conflict exists and it's not already in the message, append suggestions
+            if (!available && suggestions) {
+                if (!finalMsg.includes('Available halls:')) {
+                    finalMsg += ` Possible conflict. Available halls on this date: ${suggestions}. Please resubmit with a free venue.`;
+                }
+                input.value = finalMsg;
+            }
+
+            // Send the remark as a 'rejection' so the organizer knows they need to fix it
+            await processEvent(id, 'rejected');
+        }
+
+        function toggleBrief(id) {
+            const brief = document.getElementById(`brief-${id}`);
+            const arrow = document.getElementById(`arrow-${id}`);
+            if(brief.classList.contains('hidden')) {
+                brief.classList.remove('hidden');
+                arrow.style.transform = 'rotate(180deg)';
+            } else {
+                brief.classList.add('hidden');
+                arrow.style.transform = 'rotate(0deg)';
+            }
+        }
+
+        function openLightbox(src) {
+            const lb = document.getElementById('imageLightbox');
+            const img = document.getElementById('lightboxImg');
+            img.src = src;
+            lb.classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeLightbox() {
+            const lb = document.getElementById('imageLightbox');
+            lb.classList.add('hidden');
+            document.body.style.overflow = '';
+        }
+
+        async function loadInventory() {
+            const grid = document.getElementById('inventoryGrid');
+            try {
+                const res = await AuthGuard.secureFetch('/api/events/halls', {
+                    headers: {  }
+                });
+                const halls = await res.json();
+                if(res.ok) {
+                    grid.innerHTML = halls.map(h => `
+                        <div class="bg-white rounded-3xl p-8 border border-gray-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all group">
+                            <div class="h-10 w-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center mb-6 font-black group-hover:bg-primary group-hover:text-white transition-colors">V</div>
+                            <h4 class="text-xl font-black text-primary tracking-tight mb-2">${h.name}</h4>
+                            <p class="text-gray-400 font-bold text-[10px] uppercase tracking-widest flex items-center gap-2 mb-4">
+                                <i data-lucide="users" class="w-3 h-3"></i> Capacity: ${h.capacity}
+                            </p>
+                            
+                            <hr class="mb-5 border-slate-50">
+
+                            <div>
+                                <h5 class="text-[9px] font-black uppercase text-slate-400 tracking-widest mb-3">Upcoming Occupancy</h5>
+                                <div class="space-y-3">
+                                    ${h.bookings.length > 0 ? h.bookings.map(b => `
+                                        <div class="p-3 bg-slate-50 rounded-xl border border-slate-100 flex flex-col gap-1">
+                                            <div class="flex justify-between items-center">
+                                                <span class="text-[10px] font-black text-slate-900 truncate pr-2">${b.title}</span>
+                                                <span class="px-1.5 py-0.5 bg-blue-50 text-blue-600 rounded-md text-[8px] font-black uppercase">${b.club_name}</span>
+                                            </div>
+                                            <div class="flex items-center gap-2 text-[9px] text-slate-500 font-medium">
+                                                <i data-lucide="clock" class="w-3 h-3"></i>
+                                                ${new Date(b.start).toLocaleString([], {day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit'})} - ${new Date(b.end).toLocaleString([], {day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit'})}
+                                            </div>
+                                        </div>
+                                    `).join('') : '<div class="py-4 text-center text-[10px] text-gray-400 italic">No approved bookings today.</div>'}
+                                </div>
+                            </div>
+
+                            <p class="text-[10px] text-gray-400 font-medium mt-6 leading-relaxed border-t border-slate-50 pt-4">${h.description || 'General purpose hall for events.'}</p>
+                        </div>
+                    `).join('');
+                    lucide.createIcons();
+                }
+            } catch(e) { console.error(e); }
+        }
+
+        function approve(id) { alert('Event ' + id + ' approved!'); }
+        function reject(id) { alert('Event ' + id + ' rejected.'); }
+
+        // Restore last active section
+        const lastSection = localStorage.getItem('activeAdminSection') || 'approvals';
+        showSection(lastSection);
+
+        // Fetch Admin Info for Header
+        async function loadAdminHeader() {
+            try {
+                const res = await AuthGuard.secureFetch('/api/admin/profile/get', {
+                    headers: {  }
+                });
+                const data = await res.json();
+                if(res.ok) {
+                    const u = data.user;
+                    if(u.organization_name) {
+                        document.getElementById('sectionSubtitle').textContent = u.organization_name + " | Super Administrator";
+                    }
+                    if(u.full_name) {
+                        const initial = u.full_name.charAt(0).toUpperCase();
+                        document.querySelector('a[href="admin-profile.html"]').textContent = initial;
+                    }
+                }
+            } catch(e) { console.warn("Header load failed", e); }
+        }
+
+
+
+        // Add placeholders for missing sections to avoid JS errors
+        const sectionsContainer = document.querySelector('main');
+        ['culturals', 'reports'].forEach(id => {
+            if(!document.getElementById(id)) {
+                const div = document.createElement('div');
+                div.id = id;
+                div.className = 'section hidden animate-in rounded-3xl bg-white p-12 shadow-xl shadow-blue-900/5 text-center';
+                div.innerHTML = `<h2 class="text-2xl font-black text-primary uppercase">${id} Panel</h2><p class="text-gray-400 mt-4 font-bold">This module is currently in development.</p>`;
+                sectionsContainer.appendChild(div);
+            }
+        });
+        let currentCalDate = new Date();
+        let calendarData = [];
+
+        async function loadCalendar() {
+            try {
+                const res = await AuthGuard.secureFetch('/api/admin/events/calendar');
+                calendarData = await res.json();
+                renderCalendar();
+            } catch(e) { console.error(e); }
+        }
+
+        function renderCalendar() {
+            const grid = document.getElementById('calendarGrid');
+            const monthTitle = document.getElementById('currentMonthYear');
+            if(!grid || !monthTitle) return;
+            
+            const year = currentCalDate.getFullYear();
+            const month = currentCalDate.getMonth();
+            
+            monthTitle.textContent = new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric' }).format(currentCalDate);
+
+            const firstDay = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+            let html = '';
+            // Padding
+            for(let i=0; i<firstDay; i++) {
+                html += `<div class="bg-white/50 min-h-[120px] p-4 text-slate-200"></div>`;
+            }
+
+            for(let d=1; d<=daysInMonth; d++) {
+                const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+                const dailyEvents = calendarData.filter(e => e.start_date.split('T')[0] === dateStr);
+                const isToday = new Date().toDateString() === new Date(year, month, d).toDateString();
+
+                html += `
+                    <div class="bg-white min-h-[120px] p-3 border-r border-b border-slate-50 hover:bg-slate-50 transition-colors">
+                        <span class="text-[10px] font-black ${isToday ? 'bg-primary text-white h-5 w-5 rounded-full flex items-center justify-center' : 'text-slate-400'}">${d}</span>
+                        <div class="mt-2 space-y-1">
+                            ${dailyEvents.map(e => `
+                                <div class="px-2 py-1 rounded-md text-[8px] font-bold truncate 
+                                    ${e.has_conflict ? 'bg-red-50 text-red-600 border border-red-100 animate-pulse' : 
+                                      e.status === 'approved' ? 'bg-green-50 text-green-700 border border-green-100' : 'bg-amber-50 text-amber-700 border border-amber-100'}">
+                                    ${e.hall_name}: ${e.title}
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+            grid.innerHTML = html;
+            lucide.createIcons();
+        }
+
+        function changeMonth(offset) {
+            currentCalDate.setMonth(currentCalDate.getMonth() + offset);
+            renderCalendar();
+        }
+
+        loadAdminHeader();
+        fetchNotificationCount();
+        loadCalendar();
+    </script>
+    </script>
+</body>
+</html>

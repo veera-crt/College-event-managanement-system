@@ -1,0 +1,18 @@
+# Environment Secrets
+.env
+
+# Virtual environment
+venv/
+.venv/
+env/
+
+# Python caching
+__pycache__/
+*.pyc
+
+# OS files
+.DS_Store
+
+# Temporary storage
+backend/invoices/
+backend/uploads/

@@ -1,0 +1,1734 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="/js/auth-check.js"></script>
+    <script>AuthGuard.requireAuth(['organizer']);</script>
+    <title>Organizer Dashboard - College Event Management System</title>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <link rel="icon" type="image/svg+xml" href="../favicon.svg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#1e3a8a',
+                        secondary: '#3b82f6',
+                        accent: '#ef4444',
+                        background: '#f8fafc',
+                        foreground: '#1e293b',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        .animate-in { animation: fadeIn 0.3s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .mismatch-pulse {
+            animation: pulse-border 1.5s infinite;
+            border-left: 8px solid #ef4444 !important;
+            background: linear-gradient(90deg, #fef2f2 0%, #ffffff 100%) !important;
+        }
+        
+        @keyframes pulse-border {
+            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+        }
+
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-[#f8fafc] text-[#1e293b]">
+    <div class="grid min-h-screen grid-cols-[280px_1fr]">
+        <!-- Sidebar -->
+        <aside class="flex flex-col border-r border-[#e2e8f0] bg-white p-8">
+            <div class="mb-12 flex items-center gap-3">
+                <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-white font-black text-xl italic shadow-lg shadow-blue-200">A</div>
+                <span class="text-xl font-black tracking-tighter text-primary">ORGANIZER HUB</span>
+            </div>
+
+            <nav class="flex-1 space-y-2">
+                <button onclick="showSection('create')" data-section="create" class="nav-btn flex w-full items-center gap-4 rounded-xl px-5 py-4 text-sm font-bold transition-all border-l-4 border-transparent hover:bg-gray-50 hover:text-primary">
+                    <i data-lucide="plus-circle" class="h-5 w-5"></i> Create Event
+                </button>
+                <button onclick="showSection('events')" data-section="events" class="nav-btn flex w-full items-center gap-4 rounded-xl px-5 py-4 text-sm font-bold transition-all border-l-4 border-transparent hover:bg-gray-50 hover:text-primary">
+                    <i data-lucide="calendar" class="h-5 w-5"></i> Your Events
+                </button>
+                <button onclick="showSection('applications')" data-section="applications" class="nav-btn flex w-full items-center gap-4 rounded-xl px-5 py-4 text-sm font-bold transition-all border-l-4 border-transparent hover:bg-gray-50 hover:text-primary">
+                    <i data-lucide="file-text" class="h-5 w-5"></i> Applications
+                </button>
+                <button onclick="showSection('attendance')" data-section="attendance" class="nav-btn flex w-full items-center gap-4 rounded-xl px-5 py-4 text-sm font-bold transition-all border-l-4 border-transparent hover:bg-gray-50 hover:text-primary">
+                    <i data-lucide="user-check" class="h-5 w-5"></i> Attendance
+                </button>
+                <button onclick="showSection('updates')" data-section="updates" class="nav-btn flex w-full items-center gap-4 rounded-xl px-5 py-4 text-sm font-bold transition-all border-l-4 border-transparent hover:bg-gray-50 hover:text-primary">
+                    <i data-lucide="message-square" class="h-5 w-5"></i> Admin Updates
+                </button>
+                <button onclick="showSection('certificates')" data-section="certificates" class="nav-btn flex w-full items-center gap-4 rounded-xl px-5 py-4 text-sm font-bold transition-all border-l-4 border-transparent hover:bg-gray-50 hover:text-primary">
+                    <i data-lucide="award" class="h-5 w-5"></i> Certificates
+                </button>
+            </nav>
+
+            <div class="mt-auto pt-8 border-t border-gray-100">
+                <button onclick="logout()" class="flex w-full items-center gap-4 px-5 py-3 text-sm font-bold text-red-500 hover:text-red-600 transition-colors">
+                    <i data-lucide="log-out" class="h-5 w-5"></i> Sign Out
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="p-12 overflow-y-auto">
+            <header class="mb-12 flex items-center justify-between">
+                <div>
+                    <h1 class="text-4xl font-black text-primary tracking-tight">Organizer Portal</h1>
+                    <p class="text-gray-500 font-bold uppercase tracking-widest text-xs mt-1">Manage your campus activities</p>
+                </div>
+                <div class="flex items-center gap-6">
+                    <!-- Feedback Notification Bell -->
+                    <button onclick="showSection('updates')" class="relative h-12 w-12 rounded-xl bg-white border border-gray-100 flex items-center justify-center text-gray-500 hover:text-primary hover:bg-blue-50 transition-all shadow-sm group">
+                        <i data-lucide="bell" class="h-6 w-6 group-hover:rotate-12 transition-transform"></i>
+                        <span id="notifBadge" class="hidden absolute -top-1 -right-1 h-5 min-w-[20px] px-1 bg-red-500 text-white text-[10px] font-black rounded-full border-2 border-white flex items-center justify-center shadow-lg">0</span>
+                    </button>
+
+                    <a href="organizer-profile.html" class="h-14 w-14 rounded-2xl bg-indigo-50 border-2 border-white flex items-center justify-center text-primary font-black shadow-xl">
+                        <i data-lucide="user" class="h-7 w-7 text-primary"></i>
+                    </a>
+                </div>
+            </header>
+
+            <!-- Sections -->
+            <div id="create" class="section animate-in">
+                <div class="mx-auto max-w-[1000px] rounded-[2.5rem] bg-white p-12 shadow-xl shadow-blue-900/5">
+                    <h2 class="text-3xl font-black text-primary mb-10" id="formHeader">Create New Event</h2>
+                    <form onsubmit="handleSubmit(event)" class="space-y-10">
+                        <!-- Basic Info & Venue -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-10">
+                            <div class="space-y-2">
+                                <label class="text-xs font-black text-gray-400 uppercase tracking-widest">Event Title</label>
+                                <input type="text" id="eventTitle" required placeholder="AI Symposium 2026" class="w-full border-b border-gray-100 py-3 font-bold text-primary focus:border-primary outline-none transition-all">
+                            </div>
+                            <div class="space-y-2">
+                                <label class="text-xs font-black text-gray-400 uppercase tracking-widest">Venue / Hall Selection</label>
+                                <select id="hallSelect" required class="w-full border-b border-gray-100 py-3 font-bold text-primary focus:border-primary outline-none transition-all appearance-none cursor-pointer">
+                                    <option value="">Loading Halls...</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Timing Grid -->
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-10">
+                            <div class="space-y-2">
+                                <label class="text-xs font-black text-gray-400 uppercase tracking-widest">Start Date & Time</label>
+                                <input type="datetime-local" id="startDate" required class="w-full border-b border-gray-100 py-3 font-bold text-primary focus:border-primary outline-none transition-all">
+                            </div>
+                            <div class="space-y-2">
+                                <label class="text-xs font-black text-gray-400 uppercase tracking-widest">End Date & Time</label>
+                                <input type="datetime-local" id="endDate" required class="w-full border-b border-gray-100 py-3 font-bold text-primary focus:border-primary outline-none transition-all">
+                            </div>
+                            <div class="space-y-2">
+                                <label class="text-xs font-black text-gray-400 uppercase tracking-widest">Registration Deadline</label>
+                                <input type="datetime-local" id="regDeadline" required class="w-full border-b border-gray-100 py-3 font-bold text-primary focus:border-primary outline-none transition-all">
+                            </div>
+                        </div>
+
+                        <!-- Logistics & Monetization -->
+                        <div class="grid grid-cols-1 lg:grid-cols-[1fr_1.5fr] gap-10">
+                            <!-- Left: Basic Config -->
+                            <div class="space-y-8 bg-slate-50/50 p-8 rounded-3xl border border-slate-100">
+                                <div class="grid grid-cols-2 gap-6">
+                                    <div class="space-y-2">
+                                        <label class="text-xs font-black text-gray-400 uppercase tracking-widest">Reg. Type</label>
+                                        <select id="regTypeSelect" onchange="togglePaid(this.value)" class="w-full border-b border-blue-100 py-3 font-bold text-primary bg-transparent outline-none">
+                                            <option value="free">Free</option>
+                                            <option value="paid">Paid</option>
+                                        </select>
+                                    </div>
+                                    <div class="grid grid-cols-2 gap-6">
+                                        <div class="space-y-2">
+                                            <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Min Team Members</label>
+                                            <input type="number" id="minTeamSize" value="1" min="1" required class="w-full border-b border-blue-100 py-3 font-bold text-primary bg-transparent outline-none">
+                                        </div>
+                                        <div class="space-y-2">
+                                            <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Max Team Size</label>
+                                            <input type="number" id="teamSize" value="1" min="1" required class="w-full border-b border-blue-100 py-3 font-bold text-primary bg-transparent outline-none">
+                                        </div>
+                                    </div>
+                                </div>
+                                <label class="flex items-center gap-3 cursor-pointer group">
+                                    <input type="checkbox" id="femaleReq" class="w-5 h-5 rounded-lg border-blue-200">
+                                    <span class="text-xs font-bold text-primary group-hover:text-secondary">1 Female Participant Mandatory</span>
+                                </label>
+                            </div>
+
+                            <!-- Right: Dynamic Monetization & Poster -->
+                            <div class="space-y-8">
+                                <div id="paidAmountSection" class="hidden animate-in p-8 bg-amber-50/50 rounded-3xl border border-amber-100/30">
+                                    <div class="flex items-center gap-6">
+                                        <div class="space-y-2 flex-1">
+                                            <label class="text-xs font-black text-amber-600 uppercase tracking-widest">Registration Fee (₹ per Team)</label>
+                                            <div class="relative">
+                                                <span class="absolute left-0 top-3 font-black text-amber-600">₹</span>
+                                                <input type="number" id="regAmount" placeholder="500" class="w-full border-b border-amber-200 pl-4 py-3 font-black text-amber-900 bg-transparent outline-none">
+                                            </div>
+                                        </div>
+                                        <p class="text-[9px] font-medium text-amber-700 italic max-w-[150px]">Fee collected from each team upon registration.</p>
+                                    </div>
+                                </div>
+
+                                <div class="space-y-2">
+                                    <label class="text-xs font-black text-gray-400 uppercase tracking-widest">Online Poster URL (Google Drive/Imgur)</label>
+                                    <input type="url" id="posterUrl" required placeholder="https://drive.google.com/..." class="w-full border-b border-gray-100 py-3 font-bold text-primary focus:border-primary outline-none transition-all">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Event Flow Section (Dynamic) -->
+                        <div class="space-y-6">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <h3 class="text-xs font-black text-gray-400 uppercase tracking-widest">Add Your Event Flow</h3>
+                                    <p class="text-[10px] text-slate-400 font-medium">Define the step-by-step structure of your event.</p>
+                                </div>
+                                <button type="button" onclick="addFlowStep()" class="px-4 py-2 bg-blue-50 text-primary rounded-xl font-black text-[10px] uppercase hover:bg-primary hover:text-white transition-all shadow-sm">
+                                    <i data-lucide="plus" class="w-3 h-3 inline-block -mt-0.5 mr-1"></i> Add Step
+                                </button>
+                            </div>
+                            <div id="flowStepsContainer" class="space-y-3">
+                                <div class="empty-state px-6 py-4 bg-slate-50/50 border border-slate-100 rounded-2xl flex items-center justify-center italic text-slate-400 text-xs">
+                                     No steps added yet. Define rounds or stages here.
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Refreshments & Facilities Section -->
+                        <div class="space-y-6 border-t border-slate-50 pt-10">
+                            <div>
+                                <h3 class="text-xs font-black text-gray-400 uppercase tracking-widest">Refreshments & Facilities</h3>
+                                <p class="text-[10px] text-slate-400 font-medium">Select the amenities you will provide to participants.</p>
+                            </div>
+                            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4" id="refreshmentsGrid">
+                                <label class="flex items-center gap-3 p-4 bg-slate-50/50 rounded-2xl border border-slate-100 cursor-pointer hover:bg-blue-50 transition-colors group">
+                                    <input type="checkbox" name="refreshment" value="Welcome Snacks" class="w-4 h-4 rounded border-slate-300">
+                                    <span class="text-[11px] font-bold text-slate-600 group-hover:text-primary">Welcome Snacks</span>
+                                </label>
+                                <label class="flex items-center gap-3 p-4 bg-slate-50/50 rounded-2xl border border-slate-100 cursor-pointer hover:bg-blue-50 transition-colors group">
+                                    <input type="checkbox" name="refreshment" value="Tea / Coffee" class="w-4 h-4 rounded border-slate-300">
+                                    <span class="text-[11px] font-bold text-slate-600 group-hover:text-primary">Tea / Coffee</span>
+                                </label>
+                                <label class="flex items-center gap-3 p-4 bg-slate-50/50 rounded-2xl border border-slate-100 cursor-pointer hover:bg-blue-50 transition-colors group">
+                                    <input type="checkbox" name="refreshment" value="Lunch" class="w-4 h-4 rounded border-slate-300">
+                                    <span class="text-[11px] font-bold text-slate-600 group-hover:text-primary">Lunch</span>
+                                </label>
+                                <label class="flex items-center gap-3 p-4 bg-slate-50/50 rounded-2xl border border-slate-100 cursor-pointer hover:bg-blue-50 transition-colors group">
+                                    <input type="checkbox" name="refreshment" value="Drinking Water" class="w-4 h-4 rounded border-slate-300">
+                                    <span class="text-[11px] font-bold text-slate-600 group-hover:text-primary">Drinking Water</span>
+                                </label>
+                                <label class="flex items-center gap-3 p-4 bg-slate-50/50 rounded-2xl border border-slate-100 cursor-pointer hover:bg-blue-50 transition-colors group">
+                                    <input type="checkbox" name="refreshment" value="Light Snacks" class="w-4 h-4 rounded border-slate-300">
+                                    <span class="text-[11px] font-bold text-slate-600 group-hover:text-primary">Light Snacks</span>
+                                </label>
+                            </div>
+                            
+                            <div class="flex gap-4 items-end">
+                                <div class="flex-1 space-y-2">
+                                    <label class="text-[9px] font-black text-slate-400 uppercase tracking-widest">Custom Items</label>
+                                    <input type="text" id="customRefreshment" placeholder="e.g. Energy Drinks, Breakfast" class="w-full border-b border-gray-100 py-3 font-bold text-primary outline-none focus:border-primary text-sm bg-transparent">
+                                </div>
+                                <button type="button" onclick="addCustomRefreshment()" class="px-6 py-3 bg-indigo-50 text-indigo-600 rounded-xl font-black text-xs hover:bg-indigo-600 hover:text-white transition-all shadow-sm">➕ ADD ITEM</button>
+                            </div>
+
+                            <div class="space-y-2 pt-2">
+                                <label class="text-[9px] font-black text-indigo-400 uppercase tracking-widest">Additional Details / Timings</label>
+                                <textarea id="logisticsNotes" rows="1" oninput="this.style.height = ''; this.style.height = this.scrollHeight + 'px'" 
+                                    class="w-full border-b border-indigo-100 py-3 font-medium text-slate-600 focus:border-indigo-400 outline-none transition-all resize-none overflow-hidden min-h-[40px] text-xs" 
+                                    placeholder="Special arrangements or time-specific slots..."></textarea>
+                            </div>
+                        </div>
+
+                        <!-- Description -->
+                        <div class="space-y-3">
+                            <label class="text-xs font-black text-gray-400 uppercase tracking-widest">Event Teaser & Description</label>
+                            <textarea id="eventDesc" rows="1" required 
+                                oninput="this.style.height = ''; this.style.height = this.scrollHeight + 'px'"
+                                class="w-full border-b border-gray-100 py-3 font-bold text-primary focus:border-primary outline-none transition-all resize-none overflow-hidden min-h-[60px]" 
+                                placeholder="Explain the theme and goals of your event..."></textarea>
+                        </div>
+
+                        <button type="button" onclick="showReview()" class="w-full py-6 bg-primary text-white rounded-2xl font-black text-lg hover:bg-secondary transition-all shadow-xl shadow-blue-900/20 flex items-center justify-center gap-3">
+                            <span>Review Proposal Details</span>
+                            <i data-lucide="eye" class="w-5 h-5"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Review Modal -->
+            <div id="reviewModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+                <div class="bg-white rounded-[3rem] max-w-[800px] w-full max-h-[90vh] overflow-y-auto p-12 shadow-2xl animate-in">
+                    <div class="flex justify-between items-start mb-10">
+                        <div>
+                             <h2 class="text-3xl font-black text-primary tracking-tighter">Final Proposal Review</h2>
+                             <p class="text-gray-400 font-bold text-xs uppercase tracking-widest mt-1">Verify your event logistics before audit</p>
+                        </div>
+                        <button onclick="closeReview()" class="p-3 bg-slate-50 text-slate-400 rounded-2xl hover:bg-red-50 hover:text-red-500 transition-colors">
+                            <i data-lucide="x" class="w-6 h-6"></i>
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-[250px_1fr] gap-10">
+                         <!-- Poster Preview -->
+                         <div class="space-y-4">
+                            <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest px-1">Poster Preview</label>
+                            <div class="aspect-[3/4] rounded-3xl overflow-hidden border border-slate-100 shadow-inner bg-slate-50">
+                                <img id="reviewPoster" src="" class="w-full h-full object-cover">
+                            </div>
+                         </div>
+
+                         <!-- Details Summary -->
+                         <div class="space-y-8">
+                             <div class="grid grid-cols-2 gap-6">
+                                 <div class="p-5 bg-blue-50/50 rounded-2xl">
+                                     <p class="text-[9px] font-black text-blue-400 uppercase mb-1">Title</p>
+                                     <p id="reviewTitle" class="font-black text-primary text-sm line-clamp-1"></p>
+                                 </div>
+                                 <div class="p-5 bg-blue-50/50 rounded-2xl">
+                                     <p class="text-[9px] font-black text-blue-400 uppercase mb-1">Hall</p>
+                                     <p id="reviewHall" class="font-black text-primary text-sm"></p>
+                                 </div>
+                             </div>
+
+                             <div class="grid grid-cols-3 gap-4">
+                                 <div class="p-4 bg-slate-50 rounded-2xl">
+                                     <p class="text-[8px] font-black text-gray-400 uppercase mb-1">Start</p>
+                                     <p id="reviewStart" class="font-bold text-primary text-[10px]"></p>
+                                 </div>
+                                 <div class="p-4 bg-slate-50 rounded-2xl">
+                                     <p class="text-[8px] font-black text-gray-400 uppercase mb-1">End</p>
+                                     <p id="reviewEnd" class="font-bold text-primary text-[10px]"></p>
+                                 </div>
+                                 <div class="p-4 bg-slate-50 rounded-2xl">
+                                     <p class="text-[8px] font-black text-gray-400 uppercase mb-1">Deadline</p>
+                                     <p id="reviewDeadline" class="font-bold text-primary text-[10px]"></p>
+                                 </div>
+                             </div>
+
+                             <div class="grid grid-cols-2 gap-6 p-6 bg-indigo-900 rounded-[2rem] text-white">
+                                 <div class="flex items-center gap-3">
+                                     <div class="p-2 bg-white/10 rounded-xl"><i data-lucide="users" class="w-4 h-4 text-indigo-300"></i></div>
+                                     <div>
+                                         <p class="text-[8px] font-black text-indigo-300 uppercase">Team Size</p>
+                                         <p id="reviewTeam" class="font-black text-sm"></p>
+                                     </div>
+                                 </div>
+                                 <div class="flex items-center gap-3">
+                                     <div class="p-2 bg-white/10 rounded-xl"><i data-lucide="indian-rupee" class="w-4 h-4 text-indigo-300"></i></div>
+                                     <div>
+                                         <p class="text-[8px] font-black text-indigo-300 uppercase">Fees</p>
+                                         <p id="reviewFees" class="font-black text-sm"></p>
+                                     </div>
+                                 </div>
+                             </div>
+
+                             <!-- Flow and Refreshments Review -->
+                             <div class="space-y-6">
+                                 <div>
+                                     <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">Event Structure Flow</p>
+                                     <div id="reviewFlow" class="space-y-2">
+                                         <!-- Steps list -->
+                                     </div>
+                                 </div>
+                                 <div>
+                                     <p class="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-3">Refreshments & Facilities</p>
+                                     <div id="reviewLogistics" class="flex flex-wrap gap-2">
+                                         <!-- Badges -->
+                                     </div>
+                                 </div>
+                             </div>
+                         </div>
+                    </div>
+
+                    <div class="mt-12 flex gap-4">
+                        <button onclick="closeReview()" class="flex-1 py-5 bg-slate-50 text-slate-500 font-bold rounded-2xl hover:bg-slate-100 transition-all">Go Back & Edit</button>
+                        <button id="finalSubmitBtn" onclick="confirmSubmit()" class="flex-[2] py-5 bg-primary text-white font-black rounded-2xl shadow-xl shadow-blue-900/20 hover:bg-secondary transition-all flex items-center justify-center gap-3">
+                            <span>Confirm & Request Hall</span>
+                            <i data-lucide="check-circle" class="w-5 h-5"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="events" class="section hidden animate-in">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6" id="createdEventsGrid">
+                    <div class="col-span-full py-20 text-center text-gray-400 font-bold italic bg-white rounded-3xl border border-dashed border-gray-200">
+                        <i data-lucide="plus-circle" class="h-10 w-10 mx-auto mb-4 opacity-20"></i>
+                        You haven't created any events yet.
+                    </div>
+                </div>
+            </div>
+
+            <div id="applications" class="section hidden animate-in">
+                <div class="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                    <div>
+                        <h2 class="text-3xl font-black text-primary tracking-tight">Activity Registrations</h2>
+                        <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mt-1">Review and manage participant applications</p>
+                    </div>
+                    
+                    <div class="flex flex-wrap items-center gap-4">
+                        <div class="flex items-center gap-3 bg-white px-4 py-2.5 rounded-2xl shadow-sm border border-slate-100">
+                            <i data-lucide="filter" class="w-4 h-4 text-slate-400"></i>
+                            <select id="eventFilter" onchange="filterApplications()" class="bg-transparent border-none font-bold text-primary text-xs focus:ring-0 outline-none pr-8 cursor-pointer min-w-[180px]">
+                                <option value="all">Every Mission</option>
+                            </select>
+                        </div>
+
+                        <div class="flex items-center gap-3 bg-white px-4 py-2.5 rounded-2xl shadow-sm border border-slate-100">
+                            <i data-lucide="sort-asc" class="w-4 h-4 text-slate-400"></i>
+                            <select id="sortOption" onchange="filterApplications()" class="bg-transparent border-none font-bold text-slate-600 text-xs focus:ring-0 outline-none pr-8 cursor-pointer min-w-[140px]">
+                                <option value="newest">Recent First</option>
+                                <option value="team-az">Team (A-Z)</option>
+                                <option value="event-az">Event (A-Z)</option>
+                                <option value="oldest">Oldest First</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="appsList" class="space-y-4">
+                    <!-- Cards will be injected here -->
+                    <div class="rounded-[2.5rem] bg-white p-12 shadow-xl shadow-blue-900/5 text-center">
+                        <i data-lucide="file-text" class="w-16 h-16 text-gray-100 mx-auto mb-6"></i>
+                        <h2 class="text-2xl font-black text-primary">Scanning for records...</h2>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="updates" class="section hidden animate-in">
+                <div class="grid grid-cols-1 lg:grid-cols-[1.5fr_1fr] gap-8">
+                    <!-- Messaging Interface -->
+                    <div class="bg-white rounded-3xl p-10 border border-gray-100 shadow-sm">
+                        <div class="flex items-center gap-3 mb-8">
+                             <div class="p-2 bg-blue-50 text-blue-600 rounded-lg">
+                                <i data-lucide="send" class="h-5 w-5"></i>
+                             </div>
+                             <h3 class="text-xl font-black text-primary">Message Administrator</h3>
+                        </div>
+                        <form onsubmit="event.preventDefault(); alert('Message sent to Admin!'); this.reset();" class="space-y-6">
+                            <div class="space-y-2">
+                                <label class="text-xs font-black text-gray-400 uppercase tracking-widest">Regarding Event</label>
+                                <select class="w-full border-b border-gray-100 py-3 font-bold text-primary outline-none focus:border-primary transition-all" id="eventSelect">
+                                    <option>General Support</option>
+                                </select>
+                            </div>
+                            <div class="space-y-2">
+                                <label class="text-xs font-black text-gray-400 uppercase tracking-widest">Message Body</label>
+                                <textarea rows="3" class="w-full border-b border-gray-100 py-3 font-bold text-primary outline-none focus:border-primary transition-all resize-none" placeholder="Explain your request..."></textarea>
+                            </div>
+                            <button type="submit" class="w-full py-4 bg-primary text-white rounded-2xl font-bold hover:bg-secondary transition-all shadow-lg shadow-blue-900/10">Send Message</button>
+                        </form>
+                    </div>
+
+                    <!-- Communication History -->
+                    <div class="space-y-6">
+                        <div class="bg-indigo-900 rounded-3xl p-8 text-white">
+                            <h4 class="font-black text-sm uppercase tracking-widest opacity-60 mb-6 flex items-center gap-2">
+                                <i data-lucide="bell" class="h-4 w-4"></i> Admin Feedback
+                            </h4>
+                            <div class="space-y-4" id="feedbackList">
+                                <p class="text-sm font-medium text-indigo-300 italic">No feedback messages yet.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ATTENDANCE SECTION: Excel Format View -->
+            <div id="attendance" class="section hidden animate-in">
+                <div class="mb-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+                    <div class="flex-1">
+                        <h2 class="text-3xl font-black text-slate-900 tracking-tighter">Attendance Registry</h2>
+                    </div>
+                    
+                    <div class="flex flex-wrap items-center gap-3">
+                        <!-- Search Bar -->
+                        <div class="relative min-w-[300px]">
+                            <i data-lucide="search" class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400"></i>
+                            <input type="text" id="attendanceSearch" oninput="filterAttendanceList(this.value)" placeholder="Search by Team Name..." class="w-full pl-10 pr-4 py-4 bg-white border border-slate-200 rounded-2xl text-xs font-bold text-slate-700 shadow-sm focus:ring-2 focus:ring-primary/20 transition-all">
+                        </div>
+
+                        <!-- Export Button -->
+                        <button id="exportExcelBtn" onclick="exportAttendanceToExcel()" class="hidden h-14 px-6 bg-slate-900 text-white rounded-2xl shadow-lg flex items-center justify-center gap-3 hover:bg-black transition-all font-black text-[10px] uppercase tracking-widest group">
+                            <i data-lucide="file-spreadsheet" class="w-4 h-4 text-emerald-400 group-hover:scale-110 transition-transform"></i>
+                            Export Excel
+                        </button>
+
+                        <!-- Lock/Release Button -->
+                        <button id="lockRegistryBtn" onclick="toggleRegistryLock()" class="hidden h-14 px-6 rounded-2xl shadow-lg flex items-center justify-center gap-3 transition-all font-black text-[10px] uppercase tracking-widest group border-2">
+                            <!-- Dynamic Content injected via JS -->
+                        </button>
+
+                        <select id="attendanceEventSelect" onchange="handleAttendanceEventChange(this.value)" class="px-6 py-4 bg-white border border-slate-200 rounded-2xl text-sm font-black text-slate-700 shadow-sm focus:ring-2 focus:ring-primary/20 transition-all min-w-[250px]">
+                            <option value="">Select Event to Manage...</option>
+                        </select>
+                        
+                        <button id="genOtpBtn" onclick="generateAllOTPs()" class="hidden h-14 px-6 bg-indigo-600 text-white rounded-2xl shadow-lg shadow-indigo-100 flex items-center justify-center gap-3 hover:scale-105 active:scale-95 transition-all font-black text-xs">
+                            <i data-lucide="zap" class="w-4 h-4"></i> Generate All OTPs
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Hidden Certificate Input (Used by handlers below) -->
+                <input type="file" id="certFileInput" class="hidden" accept=".pdf" onchange="processCertUpload(this)">
+
+                <!-- Participant Table: Excel Style -->
+                <div id="attendanceTableContainer" class="hidden animate-in">
+                    <div class="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden border-b-8 border-slate-100">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left border-collapse">
+                                <thead>
+                                    <tr class="bg-slate-50/50 border-b border-slate-100">
+                                        <th class="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center w-20">No.</th>
+                                        <th class="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Student Information</th>
+                                        <th class="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Reg No</th>
+                                        <th class="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Manual</th>
+                                        <th class="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">OTP Status</th>
+                                        <th class="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">OTP Check</th>
+                                        <th class="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Final</th>
+                                        <th class="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Certification</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="attendanceTableBody" class="divide-y divide-slate-50">
+                                    <!-- Rows injected here -->
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <!-- Empty State for Table -->
+                        <div id="attendanceEmptyState" class="hidden p-20 text-center">
+                            <i data-lucide="users" class="w-16 h-16 mx-auto mb-6 text-slate-200"></i>
+                            <h3 class="text-xl font-black text-slate-900 mb-2">No Approved Participants Yet</h3>
+                            <p class="text-sm text-slate-400 font-bold">Encourage students to register for your event!</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="attendanceGreeting" class="py-20 text-center animate-in fade-in slide-in-from-bottom-5">
+                    <div class="w-24 h-24 bg-indigo-50 text-indigo-500 rounded-[2.5rem] flex items-center justify-center mx-auto mb-10 shadow-inner">
+                        <i data-lucide="book-open-check" class="w-10 h-10"></i>
+                    </div>
+                    <h3 class="text-3xl font-black text-slate-900 tracking-tighter mb-4">Select an event to start tracking</h3>
+                    <p class="text-slate-400 max-w-sm mx-auto font-bold text-sm">Choose an event from the dropdown above to manage your participants and mark their presence in real-time.</p>
+                </div>
+            </div>
+
+            <!-- CERTIFICATES SECTION: Award Management -->
+            <div id="certificates" class="section hidden animate-in">
+                <!-- Bulk Certificate Console -->
+                <div class="mb-12 bg-white rounded-[2.5rem] border border-slate-100 shadow-sm p-8 border-b-8 border-slate-100 animate-in fade-in slide-in-from-bottom-5">
+                    <div class="flex flex-col lg:flex-row gap-8">
+                        <!-- Step 1: Select Event -->
+                        <div class="flex-1">
+                            <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+                                <span class="h-5 w-5 rounded-full bg-slate-100 flex items-center justify-center text-slate-500">1</span>
+                                Select Targeted Event
+                            </label>
+                            <select id="bulkCertEventSelect" onchange="handleCertEventChange(this.value)" class="w-full h-16 px-6 bg-slate-50 border-none rounded-2xl text-sm font-black text-slate-700 shadow-inner focus:ring-2 focus:ring-primary/20 transition-all">
+                                <option value="">Loading events...</option>
+                            </select>
+                            <div id="certEventInfoCard" class="hidden mt-4 p-5 bg-indigo-50/50 rounded-2xl border border-indigo-100/50">
+                                <h4 id="certEventTitle" class="text-sm font-black text-slate-900 mb-1 tracking-tight">--</h4>
+                                <p id="certEventDate" class="text-[10px] font-bold text-slate-500 uppercase tracking-widest">--</p>
+                            </div>
+                        </div>
+
+                        <!-- Step 2: Main Drive Link & Automated Sync -->
+                        <div class="flex-1">
+                            <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+                                <span class="h-5 w-5 rounded-full bg-slate-100 flex items-center justify-center text-slate-500">2</span>
+                                Main Google Drive Folder Link
+                            </label>
+                            <div class="flex gap-2">
+                                <input type="text" id="certDriveLink" placeholder="https://drive.google.com/drive/folders/..." class="flex-1 h-16 px-6 bg-slate-50 border-none rounded-2xl text-xs font-bold text-slate-700 shadow-inner focus:ring-2 focus:ring-primary/20 transition-all">
+                                <button onclick="saveCertDriveLink()" class="h-16 px-6 bg-white border border-slate-100 rounded-2xl text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-primary hover:border-primary/20 transition-all">Save Link</button>
+                            </div>
+
+                            <div class="mt-8">
+                                <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
+                                    <span class="h-5 w-5 rounded-full bg-slate-100 flex items-center justify-center text-slate-500">3</span>
+                                    Automated Distribution
+                                </label>
+                                <button id="syncCertsBtn" onclick="syncCertificatesFromAttendance()" class="w-full h-16 bg-slate-900 border-b-4 border-black text-white rounded-2xl flex items-center justify-center gap-3 hover:bg-black transition-all font-black text-xs group">
+                                    <i data-lucide="refresh-cw" class="w-5 h-5 text-emerald-400 group-hover:rotate-180 transition-transform"></i>
+                                    SYNC & DISTRIBUTE HONORS
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Progress Bar Overlay -->
+                    <div id="bulkProgressOverlay" class="hidden mt-10 p-6 bg-slate-50 rounded-3xl border border-slate-100">
+                        <div class="flex justify-between items-center mb-4">
+                            <span id="bulkStatusText" class="text-[10px] font-black text-slate-900 uppercase tracking-widest italic">Preparing engine...</span>
+                            <span id="bulkCountText" class="text-[10px] font-black text-slate-400 tracking-widest">0 / 0</span>
+                        </div>
+                        <div class="w-full h-4 bg-white rounded-full overflow-hidden shadow-inner border border-slate-100 p-1">
+                            <div id="bulkProgressBar" class="h-full bg-gradient-to-r from-emerald-400 to-emerald-600 rounded-full w-0 transition-all duration-300"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-10 flex items-center justify-between">
+                    <div>
+                        <h2 class="text-3xl font-black text-slate-900 tracking-tighter">Award History</h2>
+                        <p class="text-slate-500 text-sm mt-1 font-bold">Track and verify all digital credentials you have issued.</p>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden border-b-8 border-slate-100">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-slate-50/50 border-b border-slate-100">
+                                    <th class="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Issued To</th>
+                                    <th class="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Event Name</th>
+                                    <th class="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest">Issue Date</th>
+                                    <th class="px-8 py-6 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="issuedCertsBody" class="divide-y divide-slate-50 font-bold text-slate-700">
+                                <!-- Data injected here -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <div id="certsEmptyState" class="hidden p-20 text-center">
+                        <div class="w-16 h-16 bg-slate-50 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                            <i data-lucide="award" class="w-8 h-8 text-slate-300"></i>
+                        </div>
+                        <h3 class="text-xl font-black text-slate-900 mb-2">No Certificates Issued Yet</h3>
+                        <p class="text-sm text-slate-400 font-bold">Finish an event and start awarding your top performers!</p>
+                    </div>
+                </div>
+            </div>
+
+
+        </main>
+    </div>
+
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        lucide.createIcons();
+
+        // 🖼️ GOOGLE DRIVE IMAGE UTILITY
+        function getDriveDirectLink(url) {
+            if (!url) return 'https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?auto=format&fit=crop&q=80&w=400';
+            let finalUrl = url;
+            if (url.includes('drive.google.com')) {
+                const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/) || url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+                if (match && match[1]) {
+                    finalUrl = `https://lh3.googleusercontent.com/d/${match[1]}`;
+                }
+            }
+            console.log("Resolved Content URL:", finalUrl);
+            return finalUrl;
+        }
+
+        let editingEventId = null;
+        let activeEvents = [];
+        let html5QrCode = null;
+        let selectedAttendanceEventId = null;
+        let activeParticipantsData = [];
+        let isRegistryLocked = false;
+
+        // 🏢 FETCH HALLS FOR DROPDOWN
+        async function loadHalls() {
+            const select = document.getElementById('hallSelect');
+            if(!select) return;
+            try {
+                const res = await AuthGuard.secureFetch('/api/events/halls');
+                const halls = await res.json();
+                if(res.ok) {
+                    select.innerHTML = halls.map(h => `<option value="${h.id}">${h.name} (Cap: ${h.capacity})</option>`).join('');
+                }
+            } catch(e) { console.error("Halls load failed", e); }
+        }
+        loadHalls();
+
+        function showSection(sectionId) {
+            localStorage.setItem('activeOrganizerSection', sectionId);
+            
+            // If clicking 'create' from sidebar, reset form from any editing states
+            if(sectionId === 'create' && !editingEventId) resetForm();
+
+            document.querySelectorAll('.section').forEach(s => s.classList.add('hidden'));
+            const targetSection = document.getElementById(sectionId);
+            if(targetSection) targetSection.classList.remove('hidden');
+
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('bg-blue-50', 'text-primary', 'border-primary');
+                if(btn.dataset.section === sectionId) btn.classList.add('bg-blue-50', 'text-primary', 'border-primary');
+            });
+
+            if(sectionId === 'events') loadMyEvents();
+            if(sectionId === 'applications') loadApplications();
+            if(sectionId === 'updates') loadAdminUpdates();
+            if(sectionId === 'attendance') initAttendanceRegistry();
+            if(sectionId === 'certificates') {
+                loadIssuedCertificates();
+                initCertificateDistribution();
+            }
+
+            lucide.createIcons();
+        }
+
+        async function loadIssuedCertificates() {
+            const tbody = document.getElementById('issuedCertsBody');
+            const empty = document.getElementById('certsEmptyState');
+            tbody.innerHTML = '<tr><td colspan="4" class="p-20 text-center text-slate-300 italic">Fetching awards registry...</td></tr>';
+            
+            try {
+                const res = await AuthGuard.secureFetch('/api/certificates/my-certificates');
+                const data = await res.json();
+                
+                if(data.length === 0) {
+                    tbody.innerHTML = '';
+                    empty.classList.remove('hidden');
+                    return;
+                }
+
+                empty.classList.add('hidden');
+                tbody.innerHTML = data.map(c => `
+                    <tr class="hover:bg-slate-50/50 transition-colors">
+                        <td class="px-8 py-6">
+                            <div class="flex items-center gap-3">
+                                <div class="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 text-[10px] font-black">
+                                    ${c.student_name.charAt(0)}
+                                </div>
+                                <div>
+                                    <p class="text-sm font-black text-slate-900">${c.student_name}</p>
+                                    <p class="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Reg: ${c.reg_no}</p>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-8 py-6 text-sm font-black text-slate-700">${c.event_title}</td>
+                        <td class="px-8 py-6 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                            ${new Date(c.uploaded_at).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}
+                        </td>
+                        <td class="px-8 py-6 text-right">
+                            <button onclick="window.open('/api/certificates/download/${c.id}', '_blank')" class="h-10 w-10 rounded-xl bg-slate-50 text-slate-400 hover:bg-emerald-50 hover:text-emerald-600 transition-all">
+                                <i data-lucide="eye" class="w-5 h-5 mx-auto"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `).join('');
+                lucide.createIcons();
+            } catch(e) { 
+                console.error(e);
+                tbody.innerHTML = '<tr><td colspan="4" class="p-20 text-center text-red-300">Service temporarily offline.</td></tr>';
+            }
+        }
+
+        async function initCertificateDistribution() {
+            const select = document.getElementById('bulkCertEventSelect');
+            try {
+                const res = await AuthGuard.secureFetch('/api/events/my-events');
+                const events = await res.json();
+                
+                // Store globally for meta lookups
+                activeEvents = events;
+                
+                select.innerHTML = '<option value="">Select Event to Distribute Certificates...</option>';
+                events.filter(e => e.status === 'approved').forEach(e => {
+                    const opt = document.createElement('option');
+                    opt.value = e.id;
+                    opt.textContent = e.title;
+                    select.appendChild(opt);
+                });
+            } catch(e) { console.error("Event list fetch failed", e); }
+        }
+
+        let selectedCertEvent = null;
+
+        function handleCertEventChange(val) {
+            const card = document.getElementById('certEventInfoCard');
+            const title = document.getElementById('certEventTitle');
+            const date = document.getElementById('certEventDate');
+            const linkInput = document.getElementById('certDriveLink');
+
+            if (!val) {
+                card.classList.add('hidden');
+                selectedCertEvent = null;
+                return;
+            }
+
+            selectedCertEvent = activeEvents.find(e => e.id == val);
+            if (selectedCertEvent) {
+                card.classList.remove('hidden');
+                title.innerText = selectedCertEvent.title;
+                date.innerText = new Date(selectedCertEvent.start_date).toLocaleDateString(undefined, { 
+                    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' 
+                });
+                linkInput.value = selectedCertEvent.cert_folder_url || '';
+            }
+        }
+
+        async function saveCertDriveLink() {
+            if (!selectedCertEvent) return Swal.fire('Error', 'Please select an event first', 'error');
+            const link = document.getElementById('certDriveLink').value;
+
+            try {
+                const res = await AuthGuard.secureFetch('/api/certificates/update-folder-link', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ event_id: selectedCertEvent.id, folder_url: link })
+                });
+
+                if (res.ok) {
+                    selectedCertEvent.cert_folder_url = link;
+                    Swal.fire({ title: 'Saved!', text: 'Drive link updated successfully', icon: 'success', toast: true, position: 'top-end', showConfirmButton: false, timer: 2000 });
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        async function syncCertificatesFromAttendance() {
+            if (!selectedCertEvent) {
+                Swal.fire('Error', 'Please select an event before syncing!', 'error');
+                return;
+            }
+
+            const overlay = document.getElementById('bulkProgressOverlay');
+            const bar = document.getElementById('bulkProgressBar');
+            const status = document.getElementById('bulkStatusText');
+            const count = document.getElementById('bulkCountText');
+            const syncBtn = document.getElementById('syncCertsBtn');
+
+            overlay.classList.remove('hidden');
+            syncBtn.disabled = true;
+            syncBtn.classList.add('opacity-50');
+
+            status.innerText = `Analyzing attendance records...`;
+            bar.style.width = `30%`;
+
+            try {
+                // Use AuthGuard.secureFetch for correct credentials and error handling
+                const res = await AuthGuard.secureFetch('/api/certificates/distribute-all', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ event_id: selectedCertEvent.id })
+                });
+
+                const data = await res.json();
+                bar.style.width = `100%`;
+
+                if (res.ok) {
+                    Swal.fire({
+                        title: 'Distribution Successful',
+                        text: data.message,
+                        icon: 'success',
+                        confirmButtonText: 'Great, back to table'
+                    });
+                } else {
+                    Swal.fire('Sync Failed', data.error, 'error');
+                }
+            } catch (e) {
+                console.error(e);
+                Swal.fire('Error', 'Failed to communicate with honors engine.', 'error');
+            } finally {
+                overlay.classList.add('hidden');
+                syncBtn.disabled = false;
+                syncBtn.classList.remove('opacity-50');
+                loadIssuedCertificates();
+            }
+        }
+
+        async function initAttendanceRegistry() {
+            const select = document.getElementById('attendanceEventSelect');
+            try {
+                const res = await AuthGuard.secureFetch('/api/events/my-events');
+                const events = await res.json();
+                
+                select.innerHTML = '<option value="">Select Event to Manage...</option>';
+                events.filter(e => e.status === 'approved').forEach(e => {
+                    const opt = document.createElement('option');
+                    opt.value = e.id;
+                    opt.textContent = e.title;
+                    select.appendChild(opt);
+                });
+            } catch(e) { console.error("Event list fetch failed", e); }
+        }
+
+        async function handleAttendanceEventChange(val) {
+            selectedAttendanceEventId = val;
+            const tableContainer = document.getElementById('attendanceTableContainer');
+            const greeting = document.getElementById('attendanceGreeting');
+            const genBtn = document.getElementById('genOtpBtn');
+            const exportBtn = document.getElementById('exportExcelBtn');
+            const lockBtn = document.getElementById('lockRegistryBtn');
+            
+            if(!val) {
+                tableContainer.classList.add('hidden');
+                greeting.classList.remove('hidden');
+                genBtn.classList.add('hidden');
+                exportBtn.classList.add('hidden');
+                lockBtn.classList.add('hidden');
+                return;
+            }
+
+            greeting.classList.add('hidden');
+            tableContainer.classList.remove('hidden');
+            genBtn.classList.remove('hidden');
+            exportBtn.classList.remove('hidden');
+            lockBtn.classList.remove('hidden');
+            await loadAttendanceList(val);
+        }
+
+        function updateLockUI() {
+            const btn = document.getElementById('lockRegistryBtn');
+            const genBtn = document.getElementById('genOtpBtn');
+            if(!btn) return;
+
+            if(isRegistryLocked) {
+                // UI for Locked State
+                btn.className = "h-14 px-6 bg-rose-50 text-rose-600 border-rose-100 rounded-2xl shadow-sm flex items-center justify-center gap-3 hover:bg-rose-100 transition-all font-black text-[10px] uppercase tracking-widest group border-2";
+                btn.innerHTML = `<i data-lucide="lock" class="w-4 h-4 animate-bounce"></i> Registry Locked`;
+                
+                if(genBtn) {
+                    genBtn.disabled = true;
+                    genBtn.className = "h-14 px-6 bg-slate-100 text-slate-400 rounded-2xl shadow-sm flex items-center justify-center gap-3 transition-all font-black text-xs cursor-not-allowed";
+                    genBtn.title = "Registry is Locked";
+                }
+            } else {
+                // UI for Released State
+                btn.className = "h-14 px-6 bg-white text-slate-600 border-slate-200 rounded-2xl shadow-sm flex items-center justify-center gap-3 hover:border-primary/50 transition-all font-black text-[10px] uppercase tracking-widest group border-2";
+                btn.innerHTML = `<i data-lucide="unlock" class="w-4 h-4"></i> Lock Registry`;
+                
+                if(genBtn) {
+                    genBtn.disabled = false;
+                    genBtn.className = "h-14 px-6 bg-indigo-600 text-white rounded-2xl shadow-lg shadow-indigo-100 flex items-center justify-center gap-3 hover:scale-105 active:scale-95 transition-all font-black text-xs";
+                    genBtn.title = "";
+                }
+            }
+            lucide.createIcons();
+        }
+
+        async function toggleRegistryLock() {
+            const btn = document.getElementById('lockRegistryBtn');
+            btn.disabled = true;
+            btn.classList.add('opacity-50');
+
+            try {
+                const res = await AuthGuard.secureFetch('/api/attendance/toggle-lock', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ event_id: selectedAttendanceEventId })
+                });
+
+                const data = await res.json();
+                if(res.ok) {
+                    isRegistryLocked = data.locked;
+                    updateLockUI();
+                    renderAttendanceRows(activeParticipantsData);
+                    
+                    Swal.fire({
+                        title: isRegistryLocked ? 'Registry Locked' : 'Registry Released',
+                        text: data.message,
+                        icon: 'success',
+                        toast: true,
+                        position: 'top-end',
+                        showConfirmButton: false,
+                        timer: 3000
+                    });
+                } else {
+                    Swal.fire('Error', data.error || 'Failed to toggle lock', 'error');
+                }
+            } catch(e) {
+                console.error(e);
+                Swal.fire('Error', 'Connection failed', 'error');
+            } finally {
+                btn.disabled = false;
+                btn.classList.remove('opacity-50');
+            }
+        }
+
+        async function exportAttendanceToExcel() {
+            if(!activeParticipantsData || activeParticipantsData.length === 0) {
+                Swal.fire('No Data', 'There are no participants to export for this event.', 'info');
+                return;
+            }
+
+            const eventName = document.getElementById('attendanceEventSelect').options[document.getElementById('attendanceEventSelect').selectedIndex].text;
+            
+            // Prepare Data for SheetJS
+            const exportData = activeParticipantsData.map((p, idx) => ({
+                "SL NO": idx + 1,
+                "FULL NAME": p.full_name,
+                "REG NO": p.reg_no,
+                "DEPARTMENT": p.department || 'N/A',
+                "PERSONAL EMAIL": p.email,
+                "COLLEGE EMAIL": p.college_email || 'N/A',
+                "TEAM NAME": p.team_name || 'Individual',
+                "MANUAL CHECK-IN": p.manual_present ? "YES" : "NO",
+                "MANUAL MARKED AT": p.manual_marked_at ? new Date(p.manual_marked_at).toLocaleString() : 'N/A',
+                "OTP VERIFIED": p.otp_present ? "YES" : "NO",
+                "OTP VERIFIED AT": p.otp_verified_at ? new Date(p.otp_verified_at).toLocaleString() : 'N/A',
+                "OTP CODE": p.event_otp || 'N/A',
+                "OVERALL STATUS": (p.manual_present && p.otp_present) ? "PRESENT" : "ABSENT/INCOMPLETE"
+            }));
+
+            // Create Worksheet
+            const ws = XLSX.utils.json_to_sheet(exportData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Attendance Registry");
+
+            // Auto-size columns
+            const colWidths = [10, 25, 15, 20, 30, 30, 15, 15, 25, 15, 25, 15, 20];
+            ws['!cols'] = colWidths.map(w => ({ wch: w }));
+
+            // Trigger Download
+            const fileName = `Attendance_Registry_${eventName.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.xlsx`;
+            XLSX.writeFile(wb, fileName);
+
+            Swal.fire({
+                title: 'Export Success!',
+                text: `${exportData.length} records exported to ${fileName}`,
+                icon: 'success',
+                confirmButtonColor: '#1e3a8a'
+            });
+        }
+
+        function filterAttendanceList(query) {
+            const term = query.toLowerCase();
+            const filtered = activeParticipantsData.filter(p => 
+                (p.team_name || 'Individual').toLowerCase().includes(term) ||
+                p.full_name.toLowerCase().includes(term) ||
+                p.reg_no.toLowerCase().includes(term)
+            );
+            renderAttendanceRows(filtered);
+        }
+
+        async function generateAllOTPs() {
+            if(!selectedAttendanceEventId) return;
+            try {
+                // Show loading state
+                const genBtn = document.getElementById('genOtpBtn');
+                const originalText = genBtn.innerHTML;
+                genBtn.disabled = true;
+                genBtn.innerHTML = '<i data-lucide="loader" class="w-4 h-4 animate-spin"></i> Generating...';
+                lucide.createIcons();
+
+                const res = await AuthGuard.secureFetch('/api/attendance/generate-otps', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ event_id: selectedAttendanceEventId })
+                });
+                const data = await res.json();
+                
+                if(res.ok) {
+                    Swal.fire('Success', data.message, 'success');
+                    await loadAttendanceList(selectedAttendanceEventId);
+                } else {
+                    Swal.fire('Error', data.error, 'error');
+                }
+                
+                genBtn.disabled = false;
+                genBtn.innerHTML = originalText;
+                lucide.createIcons();
+            } catch(e) { console.error(e); }
+        }
+
+        async function loadAttendanceList(eventId) {
+            const tbody = document.getElementById('attendanceTableBody');
+            const empty = document.getElementById('attendanceEmptyState');
+            tbody.innerHTML = '<tr class="animate-pulse"><td colspan="8" class="px-8 py-20 text-center text-slate-300 font-black italic uppercase">Synchronizing registry...</td></tr>';
+            try {
+                const res = await AuthGuard.secureFetch(`/api/registrations/get-attendees/${eventId}`);
+                if(res.ok) {
+                    const data = await res.json();
+                    activeParticipantsData = data.participants;
+                    isRegistryLocked = data.locked;
+                    updateLockUI();
+                    renderAttendanceRows(data.participants);
+                }
+            } catch(e) { 
+                console.error("Registry sync failed", e);
+                tbody.innerHTML = '<tr><td colspan="8" class="p-20 text-center text-red-500 font-black italic">Failed to synchronize registry. Please check your connection.</td></tr>';
+            }
+        }
+
+        function renderAttendanceRows(participants) {
+            const tbody = document.getElementById('attendanceTableBody');
+            const empty = document.getElementById('attendanceEmptyState');
+            
+            if(participants.length === 0) {
+                tbody.innerHTML = '';
+                empty.classList.remove('hidden');
+                return;
+            }
+
+            empty.classList.add('hidden');
+            tbody.innerHTML = participants.map((p, idx) => {
+                const isMismatch = p.manual_present !== p.otp_present;
+                const isFullyPresent = p.manual_present && p.otp_present;
+                
+                return `
+                    <tr class="hover:bg-slate-50/50 transition-all group ${isMismatch && (p.manual_present || p.otp_present) ? 'mismatch-pulse' : ''} ${isFullyPresent ? 'bg-emerald-50/20' : ''}">
+                        <td class="px-8 py-6 text-center text-[11px] font-black text-slate-400 tabular-nums">${idx + 1}</td>
+                        <td class="px-8 py-6">
+                            <div class="flex items-center gap-4">
+                                <div class="w-10 h-10 rounded-full ${isFullyPresent ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-100 text-slate-500'} flex items-center justify-center font-black text-xs transition-all shadow-inner">
+                                    ${p.full_name.charAt(0)}
+                                </div>
+                                <div>
+                                    <p class="text-sm font-black text-slate-900 leading-none">${p.full_name}</p>
+                                    <p class="text-[9px] font-bold text-primary uppercase tracking-tighter mt-1">${p.team_name || 'Individual'}</p>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-8 py-6 text-[11px] font-black text-slate-500 tabular-nums">${p.reg_no}</td>
+                        
+                        <!-- Manual Toggle -->
+                        <td class="px-8 py-6 text-center">
+                            <label class="relative inline-flex items-center ${isRegistryLocked ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}">
+                                <input type="checkbox" ${p.manual_present ? 'checked' : ''} 
+                                       ${isRegistryLocked ? 'disabled' : ''}
+                                       onchange="toggleAttendanceRecord(${p.student_id}, this.checked)" 
+                                       class="sr-only peer">
+                                <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600 shadow-inner"></div>
+                            </label>
+                        </td>
+
+                        <!-- OTP Status -->
+                        <td class="px-8 py-6 text-center">
+                            <div class="flex flex-col items-center">
+                                ${p.otp_present ? 
+                                    '<span class="px-3 py-1 bg-emerald-100 text-emerald-700 rounded-lg text-[9px] font-black uppercase tracking-widest flex items-center gap-1 shadow-sm"><i data-lucide="check" class="w-3 h-3"></i> Verified</span>' : 
+                                    '<span class="px-3 py-1 bg-amber-100 text-amber-700 rounded-lg text-[9px] font-black uppercase tracking-widest flex items-center gap-1 shadow-sm"><i data-lucide="clock" class="w-3 h-3"></i> Pending</span>'
+                                }
+                            </div>
+                        </td>
+
+                        <!-- OTP Reference (For Organizer) -->
+                        <td class="px-8 py-6 text-center">
+                            <span class="text-[10px] font-black font-mono bg-slate-100 px-2.5 py-1.5 rounded-lg text-slate-600 uppercase tracking-[0.2em] shadow-inner border border-slate-200/50">
+                                ${p.event_otp || '<span class="opacity-30">NOT GEN</span>'}
+                            </span>
+                        </td>
+
+                        <!-- Final Presence State -->
+                        <td class="px-8 py-6 text-center">
+                            ${isFullyPresent ? 
+                                '<div class="h-10 w-10 rounded-full bg-emerald-500 text-white flex items-center justify-center mx-auto shadow-lg shadow-emerald-200 animate-in zoom-in"><i data-lucide="award" class="w-5 h-5 stroke-[3]"></i></div>' : 
+                                isMismatch && (p.manual_present || p.otp_present) ?
+                                '<div class="h-10 w-10 rounded-full bg-orange-500 text-white flex items-center justify-center mx-auto shadow-lg shadow-orange-200 animate-pulse"><i data-lucide="alert-triangle" class="w-5 h-5 stroke-[3]"></i></div>' :
+                                '<div class="h-10 w-10 rounded-full bg-slate-100 text-slate-300 flex items-center justify-center mx-auto"><i data-lucide="slash" class="w-5 h-5"></i></div>'
+                            }
+                        </td>
+
+                        <td class="px-8 py-6 text-right">
+                             <div class="flex items-center justify-end gap-2">
+                                ${p.has_certificate ? `
+                                    <button onclick="viewCertificate(${p.student_id})" class="p-2.5 bg-emerald-50 text-emerald-600 rounded-xl hover:bg-emerald-100 transition-all shadow-sm border border-emerald-100" title="View Certificate">
+                                        <i data-lucide="file-check" class="w-4 h-4"></i>
+                                    </button>
+                                ` : `
+                                    <button onclick="${isFullyPresent ? `triggerCertUpload(${p.student_id})` : 'Swal.fire({title: \'Attendance Incomplete\', text: \'Participants must complete both Manual Check-in and OTP Verification before certificates can be issued.\', icon: \'warning\', confirmButtonColor: \'#1e3a8a\'})'}" 
+                                            class="p-2.5 rounded-xl transition-all shadow-sm ${isFullyPresent ? 'bg-indigo-50 text-indigo-500 hover:bg-indigo-100 border border-indigo-100' : 'bg-slate-50 text-slate-300 opacity-50 cursor-not-allowed border border-slate-200/50'}" 
+                                            title="${isFullyPresent ? 'Issue Certificate' : 'Wait for 2-step verification'}">
+                                        <i data-lucide="upload-cloud" class="w-4 h-4"></i>
+                                    </button>
+                                `}
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+            lucide.createIcons();
+        }
+
+        async function toggleAttendanceRecord(studentId, isChecked) {
+            try {
+                const endpoint = isChecked ? '/api/attendance/mark' : '/api/attendance/unmark';
+                const res = await AuthGuard.secureFetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ event_id: selectedAttendanceEventId, student_id: studentId })
+                });
+                
+                if(!res.ok) {
+                    Swal.fire('Error', 'Failed to synchronize with server.', 'error');
+                    loadAttendanceList(selectedAttendanceEventId);
+                } else {
+                    const p = activeParticipantsData.find(u => u.student_id === studentId);
+                    if(p) p.manual_present = isChecked;
+                    renderAttendanceRows(activeParticipantsData);
+                }
+            } catch(e) { console.error(e); }
+        }
+
+        let currentCertTargetStudent = null;
+
+        function triggerCertUpload(studentId) {
+            currentCertTargetStudent = studentId;
+            document.getElementById('certFileInput').click();
+        }
+
+        async function processCertUpload(input) {
+            if(!input.files || !input.files[0]) return;
+            const file = input.files[0];
+            
+            if(file.type !== 'application/pdf') {
+                alert("Only PDF certificates are allowed.");
+                input.value = '';
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('event_id', selectedAttendanceEventId);
+            formData.append('student_id', currentCertTargetStudent);
+
+            try {
+                const res = await AuthGuard.secureFetch('/api/certificates/upload', {
+                    method: 'POST',
+                    body: formData // AuthGuard will handle multi-part without JSON headers
+                });
+                
+                const data = await res.json();
+                if(res.ok) {
+                    alert("Certificate Issued Successfully!");
+                    loadAttendanceList(selectedAttendanceEventId);
+                } else {
+                    alert(data.error || "Upload failed");
+                }
+            } catch(e) { console.error("Upload error", e); }
+            finally { input.value = ''; }
+        }
+
+        async function viewCertificate(studentId) {
+            alert("This will eventually open the certificate in a new tab. For now, checking registry connectivity...");
+            // In a real scenario, we'd fetch the ID first, but here we can just try to download
+            // Since we don't have the cert_id in the table yet, we'll wait for Phase 4 to polish this.
+        }
+
+        let allApplications = [];
+        async function loadApplications() {
+            const list = document.getElementById('appsList');
+            const filter = document.getElementById('eventFilter');
+            
+            try {
+                const res = await AuthGuard.secureFetch('/api/registrations/club-applications');
+                const data = await res.json();
+                allApplications = data;
+                
+                if(res.ok) {
+                    // Populate Filter
+                    const events = [...new Set(data.map(r => r.event_title))];
+                    filter.innerHTML = '<option value="all">Check All Activities</option>' + 
+                        events.map(e => `<option value="${e}">${e}</option>`).join('');
+
+                    renderApplications(data);
+                }
+            } catch(e) { console.error(e); }
+        }
+
+        function filterApplications() {
+            const eventVal = document.getElementById('eventFilter').value;
+            const sortVal = document.getElementById('sortOption').value;
+
+            let filtered = eventVal === 'all' ? [...allApplications] : allApplications.filter(a => a.event_title === eventVal);
+            
+            // Apply Sorting
+            if(sortVal === 'newest') filtered.sort((a,b) => new Date(b.registered_at) - new Date(a.registered_at));
+            if(sortVal === 'oldest') filtered.sort((a,b) => new Date(a.registered_at) - new Date(b.registered_at));
+            if(sortVal === 'team-az') filtered.sort((a,b) => (a.team_name || '').localeCompare(b.team_name || ''));
+            if(sortVal === 'event-az') filtered.sort((a,b) => a.event_title.localeCompare(b.event_title));
+
+            renderApplications(filtered);
+        }
+
+        function renderApplications(data) {
+            const list = document.getElementById('appsList');
+            if(data.length === 0) {
+                list.innerHTML = `<div class="p-20 text-center bg-white rounded-[3rem] border-2 border-dashed border-slate-100 font-bold text-slate-300 italic">No registrations found for this filter.</div>`;
+                return;
+            }
+
+            // Group by Team Name + Event Title to avoid separate cards for the same team
+            const grouped = new Map();
+            data.forEach(r => {
+                const key = `${r.event_title}-|-${r.team_name || 'Individual'}`;
+                if (!grouped.has(key)) {
+                    grouped.set(key, { ...r, allMembers: [...(r.members || [])] });
+                } else {
+                    // Merge members if not already present
+                    const existing = grouped.get(key);
+                    const existingRegs = existing.allMembers.map(m => m.reg_no);
+                    (r.members || []).forEach(m => {
+                        if (!existingRegs.includes(m.reg_no)) {
+                            existing.allMembers.push(m);
+                        }
+                    });
+                }
+            });
+
+            list.innerHTML = Array.from(grouped.values()).map(r => `
+                <div class="bg-white rounded-[2rem] border border-slate-100 p-8 shadow-sm hover:shadow-md transition-all">
+                    <div class="flex items-start justify-between mb-6">
+                        <div class="flex gap-5">
+                            <div class="h-14 w-14 rounded-2xl bg-blue-50 text-primary flex items-center justify-center font-black text-xl shadow-inner">
+                                ${r.team_name ? r.team_name.charAt(0) : r.leader_name.charAt(0)}
+                            </div>
+                            <div>
+                                <h4 class="text-lg font-black text-slate-900 leading-tight">${r.team_name || 'Individual Entry'}</h4>
+                                <p class="text-[10px] font-black text-primary uppercase tracking-widest mt-0.5">${r.event_title}</p>
+                                <div class="flex items-center gap-4 mt-2">
+                                    <span class="text-[9px] font-bold text-slate-400 flex items-center gap-1"><i data-lucide="award" class="w-3 h-3 text-amber-500"></i> Leader: ${r.leader_name}</span>
+                                    <span class="text-[9px] font-bold text-slate-400 flex items-center gap-1"><i data-lucide="clock" class="w-3 h-3"></i> ${new Date(r.registered_at).toLocaleDateString()}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <span class="px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest ${r.status === 'approved' ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-amber-50 text-amber-600 border border-amber-100'}">
+                                ${r.status}
+                            </span>
+                            <p class="text-[10px] font-bold text-slate-400 mt-2">₹${r.amount_paid} Paid</p>
+                        </div>
+                    </div>
+
+                    <div class="pt-6 border-t border-slate-50">
+                        <p class="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3">Consolidated Team Roster</p>
+                        <div class="flex flex-wrap gap-2">
+                            ${(r.allMembers || []).map(m => `
+                                <div class="px-4 py-2 bg-slate-50 rounded-xl border border-slate-100 flex items-center gap-3">
+                                    <div class="w-2 h-2 rounded-full ${m.gender === 'female' ? 'bg-pink-400' : 'bg-blue-400'}"></div>
+                                    <div>
+                                        <p class="text-[10px] font-black text-slate-700 leading-none">${m.full_name}</p>
+                                        <p class="text-[8px] font-bold text-slate-400 mt-1 uppercase">${m.reg_no}</p>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+            lucide.createIcons();
+        }
+
+        async function loadMyEvents() {
+            const grid = document.getElementById('createdEventsGrid');
+            try {
+                const res = await AuthGuard.secureFetch('/api/events/my-events');
+                const events = await res.json();
+                activeEvents = events;
+                if(res.ok && events.length > 0) {
+                    grid.innerHTML = events.map(e => `
+                        <div class="bg-white rounded-[2.5rem] border border-gray-100 shadow-sm overflow-hidden flex flex-col group hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+                            <!-- Vertical Poster -->
+                            <div class="relative aspect-[3/4] overflow-hidden">
+                                <img src="${getDriveDirectLink(e.poster_url)}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                                <div class="absolute top-4 right-4 capitalize">
+                                    <span class="px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest ${e.status === 'approved' ? 'bg-green-500 text-white' : e.status === 'rejected' ? 'bg-red-500 text-white' : 'bg-amber-400 text-white'} shadow-lg">
+                                        ${e.status}
+                                    </span>
+                                </div>
+                            </div>
+                            
+                            <!-- Event Details -->
+                            <div class="p-8 space-y-4">
+                                <div>
+                                    <h3 class="text-xl font-black text-primary leading-tight mb-1">${e.title}</h3>
+                                    <p class="text-gray-400 text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
+                                        <i data-lucide="map-pin" class="w-3 h-3 text-secondary"></i> ${e.hall_name}
+                                    </p>
+                                </div>
+                                
+                                <div class="pt-4 border-t border-gray-50 flex justify-between items-center text-xs font-bold text-gray-500">
+                                    <div class="flex items-center gap-2">
+                                        <div class="p-1.5 bg-blue-50 text-primary rounded-lg">
+                                            <i data-lucide="users" class="w-3.5 h-3.5"></i>
+                                        </div>
+                                        <span class="font-black text-primary uppercase text-[10px] tracking-tighter">Team: ${e.min_team_size && e.min_team_size != e.team_size ? e.min_team_size + '-' + e.team_size : e.team_size}</span>
+                                    </div>
+                                    <span class="text-gray-400">${new Date(e.start_date).toLocaleDateString([], {day:'2-digit', month:'short'})}</span>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('');
+                    lucide.createIcons();
+                }
+            } catch(e) { console.error(e); }
+        }
+
+        // 🥗 Refreshment Field Management
+        function addCustomRefreshment() {
+            const input = document.getElementById('customRefreshment');
+            const val = input.value.trim();
+            if(!val) return;
+            
+            const grid = document.getElementById('refreshmentsGrid');
+            const id = 'custom-' + Date.now();
+            
+            const label = document.createElement('label');
+            label.className = "flex items-center gap-3 p-4 bg-indigo-50/50 rounded-2xl border border-indigo-100 cursor-pointer hover:bg-indigo-100 transition-colors group animate-in";
+            label.innerHTML = `
+                <input type="checkbox" name="refreshment" value="${val}" checked class="w-4 h-4 rounded border-indigo-300">
+                <span class="text-[11px] font-bold text-indigo-700 group-hover:text-indigo-900">${val}</span>
+            `;
+            grid.appendChild(label);
+            input.value = '';
+        }
+
+        // 📝 Flow Step Management
+        let flowSteps = [];
+        function addFlowStep(content = '') {
+            const container = document.getElementById('flowStepsContainer');
+            const empty = container.querySelector('.empty-state');
+            if(empty) empty.remove();
+            
+            const stepId = Date.now() + Math.random().toString(36).substr(2, 9);
+            const div = document.createElement('div');
+            div.id = `step-${stepId}`;
+            div.className = "group flex gap-4 items-start p-4 bg-white border border-slate-100 rounded-2xl shadow-sm hover:shadow-md transition-all animate-in draggable";
+            div.innerHTML = `
+                <div class="mt-2 text-slate-300 group-hover:text-primary cursor-grab"><i data-lucide="grip-vertical" class="w-4 h-4"></i></div>
+                <div class="flex-1">
+                    <input type="text" placeholder="e.g. Round 1: Idea Submission..." value="${content}" 
+                        class="w-full font-bold text-slate-700 placeholder:text-slate-300 outline-none bg-transparent text-sm">
+                </div>
+                <button type="button" onclick="removeStep('${stepId}')" class="text-slate-300 hover:text-red-500 transition-colors">
+                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                </button>
+            `;
+            container.appendChild(div);
+            lucide.createIcons();
+        }
+
+        function removeStep(id) {
+            document.getElementById(`step-${id}`).remove();
+            const container = document.getElementById('flowStepsContainer');
+            if(container.children.length === 0) {
+                container.innerHTML = `<div class="empty-state px-6 py-4 bg-slate-50/50 border border-slate-100 rounded-2xl flex items-center justify-center italic text-slate-400 text-xs">No steps added yet. Define rounds or stages here.</div>`;
+            }
+        }
+
+        async function loadAdminUpdates() {
+            const list = document.getElementById('feedbackList');
+            try {
+                const res = await AuthGuard.secureFetch('/api/events/my-events');
+                const events = await res.json();
+                if(res.ok) {
+                    const withMsgs = events.filter(e => e.admin_message);
+                    
+                    // Update Notification Count (only count if they haven't been resubmitted as pending)
+                    // Or count all where status=rejected and admin_message exists
+                    const rejectionCount = events.filter(e => e.status === 'rejected' && e.admin_message).length;
+                    updateNotificationBadge(rejectionCount);
+
+                    if(withMsgs.length > 0) {
+                        list.innerHTML = withMsgs.map(e => `
+                            <div class="p-6 bg-white/10 backdrop-blur-md rounded-2xl border border-white/10 animate-in group">
+                                <div class="flex justify-between items-start mb-3">
+                                    <p class="text-[10px] font-black uppercase tracking-widest text-indigo-300">${e.title}</p>
+                                    <span class="text-[8px] font-black px-2 py-0.5 bg-red-600/20 text-red-200 rounded-full border border-red-500/20">${e.status.toUpperCase()}</span>
+                                </div>
+                                <p class="text-sm font-medium mb-4 italic text-indigo-50 border-l-2 border-indigo-400/30 pl-4">"${e.admin_message}"</p>
+                                
+                                ${e.alternative_halls && e.alternative_halls.length > 0 ? `
+                                <div class="mb-5 space-y-2">
+                                     <p class="text-[9px] font-black text-indigo-300 uppercase tracking-widest px-1">Suggested Alternatives on this date:</p>
+                                     <div class="flex flex-wrap gap-1.5">
+                                         ${e.alternative_halls.map(h => `<span class="bg-indigo-900/60 text-white text-[9px] font-bold px-2.5 py-1 rounded-lg border border-white/10 hover:bg-emerald-600 transition-colors cursor-default">${h}</span>`).join('')}
+                                     </div>
+                                </div>
+                                ` : ''}
+
+                                <div class="flex justify-end pt-2">
+                                    ${e.status === 'rejected' ? `
+                                    <button onclick="editEvent(${e.id})" class="text-[10px] font-black text-white bg-indigo-500 px-4 py-2 rounded-xl uppercase tracking-widest hover:bg-white hover:text-indigo-900 transition-all shadow-lg flex items-center gap-2 group/btn">
+                                        <span>Edit & Re-submit</span>
+                                        <i data-lucide="edit-3" class="w-3 h-3 group-hover/btn:translate-x-0.5 transition-transform"></i>
+                                    </button>` : ''}
+                                </div>
+                            </div>
+                        `).join('');
+                    } else {
+                        list.innerHTML = '<p class="text-sm font-medium text-indigo-300 italic text-center">No feedback messages yet.</p>';
+                    }
+                    lucide.createIcons();
+                }
+            } catch(e) { console.error(e); }
+        }
+
+        async function fetchNotificationCount() {
+            try {
+                const res = await AuthGuard.secureFetch('/api/events/my-events');
+                const events = await res.json();
+                if(res.ok) {
+                    const rejectionCount = events.filter(e => e.status === 'rejected' && e.admin_message).length;
+                    updateNotificationBadge(rejectionCount);
+                }
+            } catch(e) { console.warn("Notif fetch failed", e); }
+        }
+
+        function updateNotificationBadge(count) {
+            const badge = document.getElementById('notifBadge');
+            if(count > 0) {
+                badge.textContent = count;
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+            }
+        }
+
+        function togglePaid(val) {
+            document.getElementById('paidAmountSection').classList.toggle('hidden', val === 'free');
+        }
+
+        function showReview() {
+            const form = document.querySelector('form');
+            if(!form.checkValidity()) {
+                form.reportValidity();
+                return;
+            }
+
+            // Fill Modal
+            document.getElementById('reviewTitle').textContent = form.querySelector('input[placeholder*="AI Symposium"]').value;
+            document.getElementById('reviewHall').textContent = document.getElementById('hallSelect').options[document.getElementById('hallSelect').selectedIndex].text.split('(')[0];
+            document.getElementById('reviewStart').textContent = new Date(form.querySelectorAll('input[type="datetime-local"]')[0].value).toLocaleString([], {dateStyle:'short', timeStyle:'short'});
+            document.getElementById('reviewEnd').textContent = new Date(form.querySelectorAll('input[type="datetime-local"]')[1].value).toLocaleString([], {dateStyle:'short', timeStyle:'short'});
+            document.getElementById('reviewDeadline').textContent = new Date(form.querySelectorAll('input[type="datetime-local"]')[2].value).toLocaleString([], {dateStyle:'short', timeStyle:'short'});
+            document.getElementById('reviewTeam').textContent = document.getElementById('minTeamSize').value + " to " + document.getElementById('teamSize').value + " Members";
+            
+            const regType = document.getElementById('regTypeSelect').value;
+            const amount = document.getElementById('regAmount').value || 0;
+            document.getElementById('reviewFees').textContent = regType === 'free' ? 'FREE' : `₹${amount}`;
+            
+            // Poster
+            const posterUrl = form.querySelector('input[type="url"]').value;
+            document.getElementById('reviewPoster').src = getDriveDirectLink(posterUrl);
+
+            // Flow
+            const flowContainer = document.getElementById('flowStepsContainer');
+            const steps = Array.from(flowContainer.querySelectorAll('input[type="text"]')).map(i => i.value).filter(v => v);
+            document.getElementById('reviewFlow').innerHTML = steps.map((s, idx) => `
+                <div class="flex gap-3 items-center">
+                    <span class="w-5 h-5 rounded-full bg-slate-100 text-[10px] font-black flex items-center justify-center text-slate-500">${idx+1}</span>
+                    <p class="text-[11px] font-bold text-slate-600">${s}</p>
+                </div>
+            `).join('') || '<p class="text-[10px] italic text-slate-300">No structured stages defined.</p>';
+
+            // Refreshments
+            const refreshments = Array.from(document.querySelectorAll('input[name="refreshment"]:checked')).map(i => i.value);
+            document.getElementById('reviewLogistics').innerHTML = refreshments.map(r => `
+                <span class="px-3 py-1 bg-indigo-50 text-indigo-700 rounded-lg text-[9px] font-black border border-indigo-100">${r}</span>
+            `).join('') || '<p class="text-[10px] italic text-slate-300">No amenities selected.</p>';
+
+            document.getElementById('reviewModal').classList.remove('hidden');
+        }
+
+        function closeReview() {
+            document.getElementById('reviewModal').classList.add('hidden');
+        }
+
+        async function editEvent(id) {
+            console.log("Initiating Resubmission Logic for Event ID:", id);
+            
+            // Try to find in cache first
+            let event = activeEvents.find(e => Number(e.id) === Number(id));
+            
+            // If not in cache (e.g. stale refresh), re-fetch from API
+            if(!event) {
+                console.log("State Miss: Fetching fresh event data from registry...");
+                try {
+                    const res = await AuthGuard.secureFetch('/api/events/my-events');
+                    const events = await res.json();
+                    if(res.ok) {
+                        activeEvents = events;
+                        event = activeEvents.find(e => Number(e.id) === Number(id));
+                    }
+                } catch(e) { console.error("Registry fetch failed", e); }
+            }
+
+            if(!event) {
+                console.error("Critical State Error: Event ID not found in authorized registry.", id);
+                alert("Failed to reconstruct proposal details. Please refresh.");
+                return;
+            }
+
+            console.log("Rehydrating Form with Context:", event);
+            editingEventId = event.id;
+            
+            // Populate Fields with stable IDs
+            document.getElementById('eventTitle').value = event.title;
+            document.getElementById('hallSelect').value = event.hall_id;
+            
+            const fmtDate = (d) => d ? new Date(d).toISOString().slice(0, 16) : "";
+            document.getElementById('startDate').value = fmtDate(event.start_date);
+            document.getElementById('endDate').value = fmtDate(event.end_date);
+            document.getElementById('regDeadline').value = fmtDate(event.reg_deadline);
+            
+            document.getElementById('regTypeSelect').value = event.reg_amount > 0 ? 'paid' : 'free';
+            togglePaid(event.reg_amount > 0 ? 'paid' : 'free');
+            document.getElementById('regAmount').value = event.reg_amount;
+            document.getElementById('minTeamSize').value = event.min_team_size || 1;
+            document.getElementById('teamSize').value = event.team_size;
+            document.getElementById('femaleReq').checked = event.female_mandatory;
+            document.getElementById('posterUrl').value = event.poster_url;
+            document.getElementById('eventDesc').value = event.description;
+
+            // Rehydrate Flow
+            const flowContainer = document.getElementById('flowStepsContainer');
+            flowContainer.innerHTML = '';
+            if(event.event_flow && Array.isArray(event.event_flow)) {
+                event.event_flow.forEach(s => addFlowStep(s));
+            } else {
+                flowContainer.innerHTML = '<div class="empty-state px-6 py-4 bg-slate-50/50 border border-slate-100 rounded-2xl flex items-center justify-center italic text-slate-400 text-xs">No steps added yet. Define rounds or stages here.</div>';
+            }
+
+            // Rehydrate Refreshments
+            document.querySelectorAll('input[name="refreshment"]').forEach(i => i.checked = false);
+            if(event.refreshments) {
+                const logs = event.refreshments;
+                if(logs.items) {
+                    logs.items.forEach(item => {
+                        const existing = Array.from(document.querySelectorAll('input[name="refreshment"]')).find(i => i.value === item);
+                        if(existing) existing.checked = true;
+                        else {
+                            // Add as custom
+                            const grid = document.getElementById('refreshmentsGrid');
+                            const label = document.createElement('label');
+                            label.className = "flex items-center gap-3 p-4 bg-indigo-50/50 rounded-2xl border border-indigo-100 cursor-pointer hover:bg-indigo-100 transition-colors group";
+                            label.innerHTML = `<input type="checkbox" name="refreshment" value="${item}" checked class="w-4 h-4 rounded border-indigo-300"><span class="text-[11px] font-bold text-indigo-700 group-hover:text-indigo-900">${item}</span>`;
+                            grid.appendChild(label);
+                        }
+                    });
+                }
+                document.getElementById('logisticsNotes').value = logs.notes || '';
+            }
+
+            // UI Update
+            document.getElementById('formHeader').textContent = "Update & Resubmit Event";
+            document.getElementById('finalSubmitBtn').querySelector('span').textContent = "Update & Resubmit Proposal";
+            
+            showSection('create');
+        }
+
+        function resetForm() {
+            const form = document.querySelector('form');
+            form.reset();
+            editingEventId = null;
+            document.getElementById('formHeader').textContent = "Create New Event";
+            document.getElementById('finalSubmitBtn').innerHTML = '<span>Confirm & Request Hall</span> <i data-lucide="check-circle" class="w-5 h-5"></i>';
+            lucide.createIcons();
+            togglePaid('free');
+        }
+
+        async function confirmSubmit() {
+            const btn = document.getElementById('finalSubmitBtn');
+            btn.disabled = true;
+            btn.classList.add('opacity-70');
+            btn.innerHTML = editingEventId ? '<i data-lucide="loader" class="h-5 w-5 animate-spin"></i> Updating Proposal...' : '<i data-lucide="loader" class="h-5 w-5 animate-spin"></i> Publishing...';
+            lucide.createIcons();
+
+            const flowStepsSet = Array.from(document.getElementById('flowStepsContainer').querySelectorAll('input[type="text"]')).map(i => i.value).filter(v => v);
+            const refreshmentsSet = Array.from(document.querySelectorAll('input[name="refreshment"]:checked')).map(i => i.value);
+            const notes = document.getElementById('logisticsNotes').value;
+
+            const payload = {
+                title: document.getElementById('eventTitle').value,
+                hall_id: parseInt(document.getElementById('hallSelect').value),
+                start_date: document.getElementById('startDate').value,
+                end_date: document.getElementById('endDate').value,
+                reg_deadline: document.getElementById('regDeadline').value,
+                reg_type: document.getElementById('regTypeSelect').value,
+                reg_amount: parseInt(document.getElementById('regAmount').value || 0),
+                min_team_size: parseInt(document.getElementById('minTeamSize').value),
+                team_size: parseInt(document.getElementById('teamSize').value),
+                female_mandatory: document.getElementById('femaleReq').checked,
+                poster_url: document.getElementById('posterUrl').value,
+                description: document.getElementById('eventDesc').value,
+                event_flow: flowStepsSet,
+                refreshments: { items: refreshmentsSet, notes: notes }
+            };
+            
+            // Date Validation Logic
+            const now = new Date();
+            const start = new Date(payload.start_date);
+            const end = new Date(payload.end_date);
+            const reg = new Date(payload.reg_deadline);
+
+            if (start < now) {
+                alert("Start date cannot be in the past!");
+                resetBtnState();
+                return;
+            }
+            if (end <= start) {
+                alert("End date must be after the start date!");
+                resetBtnState();
+                return;
+            }
+            if (reg >= start) {
+                alert("Registration deadline must be before the start date!");
+                resetBtnState();
+                return;
+            }
+            if (reg < now) {
+                alert("Registration deadline cannot be in the past!");
+                resetBtnState();
+                return;
+            }
+
+            function resetBtnState() {
+                btn.disabled = false;
+                btn.classList.remove('opacity-70');
+                btn.innerHTML = editingEventId ? 'Update Proposal' : 'Resubmit Proposal';
+                lucide.createIcons();
+            }
+
+            try {
+                const url = editingEventId ? `/api/events/update/${editingEventId}` : '/api/events/create';
+                const res = await AuthGuard.secureFetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                if(res.ok) {
+                    alert(editingEventId ? 'Event Updated Successfully!' : 'Proposal Submitted!');
+                    resetForm();
+                    closeReview();
+                    showSection('events');
+                    fetchNotificationCount(); // Re-fetch counts
+                } else {
+                    alert(data.error);
+                }
+            } catch(err) { 
+                console.error("Critical Resubmission Error (Audit Traces):", err);
+                alert("Connectivity Error: Check browser console or server logs. Detail: " + err.message); 
+            }
+            finally {
+                btn.disabled = false;
+                btn.classList.remove('opacity-70');
+                btn.innerHTML = editingEventId ? "<span>Update & Resubmit Proposal</span> <i data-lucide='check-circle' class='w-5 h-5'></i>" : "<span>Confirm & Request Hall</span> <i data-lucide='check-circle' class='w-5 h-5'></i>";
+                lucide.createIcons();
+            }
+        }
+
+        // 🔄 RESTORE LAST ACTIVE SECTION ON REFRESH
+        const lastSection = localStorage.getItem('activeOrganizerSection') || 'create';
+        showSection(lastSection);
+        fetchNotificationCount();
+    </script>
+
+</body>
+</html>

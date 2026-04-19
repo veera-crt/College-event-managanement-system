@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>404 - Page Not Found</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#1e3a8a',
+                        secondary: '#3b82f6',
+                        accent: '#ef4444',
+                        background: '#f4f6fa',
+                        foreground: '#1e293b',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-[#F4F6FA] flex items-center justify-center min-h-screen p-8 text-[#1e293b]">
+    <div class="text-center max-w-xl">
+        <div class="mb-12 animate-in fade-in duration-700">
+            <h1 class="text-[12rem] font-black text-primary leading-none tracking-tighter">404</h1>
+            <h2 class="text-4xl font-black text-gray-900 mt-4 mb-4 tracking-tight uppercase">Page Not Found</h2>
+            <p class="text-xl text-gray-500 font-medium leading-relaxed max-w-md mx-auto">
+                The page you're looking for doesn't exist or has been moved to another dimension.
+            </p>
+        </div>
+        
+        <div class="flex flex-col sm:flex-row gap-6 justify-center items-center">
+            <a href="index.html" class="inline-flex items-center justify-center gap-3 px-10 py-5 bg-primary text-white font-black rounded-2xl hover:bg-secondary hover:-translate-y-1 transition-all shadow-2xl shadow-blue-900/10 text-lg">
+                <i data-lucide="home" class="w-6 h-6"></i>
+                Go to Home
+            </a>
+            
+            <button onclick="window.history.back()" class="inline-flex items-center justify-center gap-3 px-10 py-5 bg-white text-primary font-black rounded-2xl hover:bg-gray-50 hover:-translate-y-1 transition-all shadow-2xl shadow-blue-900/10 border-2 border-primary text-lg">
+                <i data-lucide="arrow-left" class="w-6 h-6"></i>
+                Go Back
+            </button>
+        </div>
+
+        <div class="mt-16 text-sm font-bold text-gray-400 uppercase tracking-widest">
+            <p>Report an error? Contact our support team.</p>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>

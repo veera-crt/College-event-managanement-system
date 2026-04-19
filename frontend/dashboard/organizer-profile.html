@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="/js/auth-check.js"></script>
+    <script>AuthGuard.requireAuth(['organizer']);</script>
+    <title>Organizer Profile - CampusHub</title>
+    <link rel="icon" type="image/svg+xml" href="../favicon.svg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#1e3a8a',
+                        secondary: '#3b82f6',
+                        accent: '#ef4444',
+                        background: '#f8fafc',
+                        foreground: '#1e293b',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        .animate-in { animation: fadeIn 0.3s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-[#f8fafc] text-[#1e293b]">
+    <div class="grid min-h-screen grid-cols-[280px_1fr]">
+        <!-- Sidebar -->
+        <aside class="flex flex-col border-r border-[#e2e8f0] bg-white p-8">
+            <div class="mb-12 flex items-center gap-3">
+                <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-white font-black text-xl italic shadow-lg shadow-blue-200">A</div>
+                <span class="text-xl font-black tracking-tighter text-primary">ORGANIZER HUB</span>
+            </div>
+
+            <nav class="flex-1 space-y-2">
+                <a href="organizer.html" class="flex w-full items-center gap-4 rounded-xl px-5 py-4 text-sm font-bold transition-all border-l-4 border-transparent hover:bg-gray-50 text-gray-500 hover:text-primary group">
+                    <i data-lucide="layout-dashboard" class="h-5 w-5"></i> Dashboard
+                </a>
+                <a href="organizer-profile.html" class="flex w-full items-center gap-4 rounded-xl px-5 py-4 text-sm font-bold transition-all border-l-4 border-primary bg-blue-50 text-primary">
+                    <i data-lucide="user" class="h-5 w-5"></i> Profile Hub
+                </a>
+            </nav>
+
+            <div class="mt-auto pt-8 border-t border-gray-100">
+                <button onclick="logout()" class="flex w-full items-center gap-4 px-5 py-3 text-sm font-bold text-red-500 hover:text-red-600 transition-colors">
+                    <i data-lucide="log-out" class="h-5 w-5"></i> Sign Out
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="p-12 overflow-y-auto">
+            <header class="mb-12 flex items-center justify-between">
+                <div>
+                    <h1 class="text-4xl font-black text-primary tracking-tight">Organizer Profile</h1>
+                    <p class="text-gray-500 font-bold uppercase tracking-widest text-xs mt-1">Manage your event group identity</p>
+                </div>
+            </header>
+
+            <div class="mx-auto max-w-[800px] animate-in">
+                <div class="bg-white rounded-[2.5rem] p-12 shadow-xl shadow-blue-900/5 overflow-hidden">
+                    <div class="flex items-center gap-8 mb-12">
+                        <div class="h-24 w-24 rounded-3xl bg-indigo-900 text-white flex items-center justify-center font-black text-4xl italic">O</div>
+                        <div>
+                            <h2 class="text-3xl font-black text-primary" id="profileNameDisplay">Organizer Name</h2>
+                            <p class="text-gray-400 font-bold uppercase tracking-widest text-sm" id="profileRole">Lead Organizer</p>
+                        </div>
+                   </div>
+
+                    <form id="organizerProfileForm" class="space-y-8">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <div class="space-y-2">
+                                <label class="text-xs font-black text-gray-400 uppercase tracking-widest">Organizer Full Name</label>
+                                <input type="text" id="name" required class="w-full border-b border-gray-100 py-3 font-bold text-primary focus:border-primary outline-none transition-all">
+                            </div>
+                            <div class="space-y-2">
+                                <label class="text-xs font-black text-gray-400 uppercase tracking-widest">Department / Organization</label>
+                                <input type="text" id="dept" disabled class="w-full border-b border-gray-100 py-3 font-bold text-gray-400 cursor-not-allowed outline-none bg-transparent">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <div class="space-y-2">
+                                <label class="text-xs font-black text-gray-400 uppercase tracking-widest">Admin Contact Email</label>
+                                <input type="email" id="email" required disabled class="w-full border-b border-gray-100 py-3 font-bold text-gray-400 cursor-not-allowed outline-none bg-transparent">
+                            </div>
+                            <div class="space-y-2">
+                                <label class="text-xs font-black text-gray-400 uppercase tracking-widest">Official Phone</label>
+                                <input type="tel" id="phone" placeholder="9876543210" class="w-full border-b border-gray-100 py-3 font-bold text-primary focus:border-primary outline-none transition-all">
+                            </div>
+                        </div>
+
+                        <button type="submit" class="w-full py-5 bg-primary text-white rounded-2xl font-black text-lg hover:bg-secondary transition-all shadow-xl shadow-blue-900/20">
+                            Update Organizer Portal
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        lucide.createIcons();
+
+        // 🛡️ API DATA SYNCHRONIZATION
+        async function loadProfile() {
+            try {
+                const res = await AuthGuard.secureFetch('/api/profile/get');
+                const data = await res.json();
+                
+                if (res.ok) {
+                    const u = data.user;
+                    // Populate UI
+                    document.getElementById('name').value = u.full_name || '';
+                    document.getElementById('profileNameDisplay').textContent = u.full_name || 'Organizer';
+                    document.getElementById('email').value = u.email || '';
+                    document.getElementById('phone').value = u.phone_number || '';
+                    document.getElementById('dept').value = u.organization_name || 'N/A';
+                    
+                    if(u.full_name) {
+                        document.querySelector('.h-24.w-24').textContent = u.full_name.charAt(0).toUpperCase();
+                    }
+                } else {
+                    console.error("Profile load failed:", data.error);
+                }
+            } catch (err) {
+                console.error("Connectivity error:", err);
+            }
+        }
+
+        loadProfile();
+
+        document.getElementById('organizerProfileForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = e.target.querySelector('button');
+            btn.disabled = true;
+            btn.textContent = "Updating Identity...";
+
+            const payload = {
+                full_name: document.getElementById('name').value,
+                phone_number: document.getElementById('phone').value,
+                department: document.getElementById('dept').value, // Used as org link
+                address: 'N/A',
+                dob: 'N/A'
+            };
+
+            try {
+                const res = await AuthGuard.secureFetch('/api/profile/update-basic', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                
+                if (res.ok) {
+                    alert('Organizer Hub Updated Successfully!');
+                    loadProfile();
+                } else {
+                    const err = await res.json();
+                    alert('Error: ' + err.error);
+                }
+            } catch (err) {
+                alert('Connection failure');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = "Update Organizer Portal";
+            }
+        });
+
+        function logout() {
+            localStorage.clear();
+            window.location.href = "../sign-in.html";
+        }
+    </script>
+</body>
+</html>

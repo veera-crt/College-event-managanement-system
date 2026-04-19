@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upcoming Events - College Event Management System</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#1e3a8a',
+                        secondary: '#3b82f6',
+                        accent: '#ef4444',
+                        background: '#ffffff',
+                        foreground: '#1e293b',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-white text-[#1e293b]">
+    <!-- Navbar -->
+    <nav class="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-100">
+        <div class="mx-auto flex max-w-[1400px] items-center justify-between px-[7%] py-6">
+            <div class="flex items-center gap-2">
+                <a href="index.html" class="flex items-center gap-2">
+                    <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-white font-black text-xl italic">A</div>
+                    <span class="text-xl font-black tracking-tighter text-primary">CampusHub</span>
+                </a>
+            </div>
+            
+            <div class="hidden items-center gap-10 md:flex">
+                <a href="index.html" class="text-sm font-medium text-gray-500 hover:text-primary transition-colors">Home</a>
+                <a href="index.html#features" class="text-sm font-medium text-gray-500 hover:text-primary transition-colors">Features</a>
+                <a href="upcoming-events.html" class="text-sm font-bold text-primary transition-colors">Events</a>
+                <a href="contact.html" class="text-sm font-medium text-gray-500 hover:text-primary transition-colors">Contact</a>
+            </div>
+
+            <div class="flex items-center gap-4">
+                <a href="sign-in.html" class="text-sm font-bold text-primary hover:text-secondary transition-colors">Login</a>
+                <a href="sign-up.html" class="rounded-xl bg-primary px-6 py-3 text-sm font-bold text-white shadow-lg shadow-blue-200 hover:bg-secondary transition-all">Sign Up</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="max-w-[1400px] mx-auto px-[7%] pt-40 pb-20">
+        <!-- Header -->
+        <div class="flex items-center justify-between mb-12">
+            <h1 class="text-5xl font-black text-primary tracking-tighter">
+                Upcoming Events
+            </h1>
+            <div class="flex gap-4">
+                <button class="px-6 py-3 border-2 border-primary text-primary rounded-xl font-bold hover:bg-primary hover:text-white transition-all shadow-lg hover:shadow-blue-200">
+                    My Registrations
+                </button>
+            </div>
+        </div>
+
+        <!-- Filter Chips -->
+        <div class="flex flex-wrap gap-3 mb-16" id="filterContainer">
+            <button class="filter-btn px-6 py-2 rounded-full border-2 border-red-100 bg-red-50 text-red-600 font-bold transition-all" onclick="filterEvents(event, 'All')">All Events</button>
+            <button class="filter-btn px-6 py-2 rounded-full border-2 border-gray-100 text-gray-400 font-bold hover:border-primary hover:text-primary transition-all" onclick="filterEvents(event, 'Hackathon')">Hackathons</button>
+            <button class="filter-btn px-6 py-2 rounded-full border-2 border-gray-100 text-gray-400 font-bold hover:border-primary hover:text-primary transition-all" onclick="filterEvents(event, 'Ideathon')">Ideathons</button>
+            <button class="filter-btn px-6 py-2 rounded-full border-2 border-gray-100 text-gray-400 font-bold hover:border-primary hover:text-primary transition-all" onclick="filterEvents(event, 'Workshop')">Workshops</button>
+        </div>
+
+        <!-- Grid -->
+        <div class="grid grid-cols-1 gap-12 lg:grid-cols-2" id="eventsGrid">
+            <!-- Dynamic events will be loaded here -->
+            <div class="col-span-full py-20 text-center text-gray-400 font-bold italic">
+                No upcoming events found. Check back later!
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-primary text-white py-24">
+        <div class="mx-auto max-w-[1400px] px-[7%] text-center border-t border-white/10">
+            <p>&copy; 2026 CampusHub - College Event Management System</p>
+        </div>
+    </footer>
+
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        lucide.createIcons();
+
+        // Restriction Check
+        const user = JSON.parse(localStorage.getItem('user'));
+        if(!user) {
+            window.location.href = 'sign-in.html';
+        }
+
+        function filterEvents(e, category) {
+            const cards = document.querySelectorAll('.event-card');
+            cards.forEach(card => {
+                if(category === 'All' || card.classList.contains('event-' + category)) {
+                    card.style.display = 'block';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+
+            // Update UI state for buttons
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.className = "filter-btn px-6 py-2 rounded-full border-2 border-gray-100 text-gray-400 font-bold hover:border-primary hover:text-primary transition-all";
+            });
+            
+            e.target.className = "filter-btn px-6 py-2 rounded-full border-2 border-red-100 bg-red-50 text-red-600 font-bold transition-all";
+        }
+    </script>
+</body>
+</html>

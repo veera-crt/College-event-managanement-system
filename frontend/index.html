@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="/js/auth-check.js"></script>
+    <script>AuthGuard.requireGuest();</script>
+    <title>CampusHub - College Event Management System</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#1e3a8a',
+                        secondary: '#3b82f6',
+                        accent: '#ef4444',
+                        background: '#ffffff',
+                        foreground: '#1e293b',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        .animate-in { animation: fadeIn 0.5s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+    <script>
+        // Global Session Check: Auto-redirect logged-in users to their dashboard
+        const sessionUser = JSON.parse(localStorage.getItem('user'));
+        if (sessionUser && sessionUser.role) {
+            const dashboardRoutes = { 
+                student: 'dashboard/student.html', 
+                organizer: 'dashboard/organizer.html', 
+                admin: 'dashboard/admin.html' 
+            };
+            window.location.href = dashboardRoutes[sessionUser.role] || 'index.html';
+        }
+    </script>
+</head>
+<body class="bg-white text-[#1e293b]">
+    <!-- Navbar -->
+    <nav class="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-100">
+        <div class="mx-auto flex max-w-[1400px] items-center justify-between px-[7%] py-6">
+            <div class="flex items-center gap-2">
+                <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-white font-black text-xl italic">A</div>
+                <span class="text-xl font-black tracking-tighter text-primary">CampusHub</span>
+            </div>
+            
+            <div class="hidden items-center gap-10 md:flex">
+                <a href="index.html" class="text-sm font-bold text-primary">Home</a>
+                <a href="features.html" class="text-sm font-medium text-gray-500 hover:text-primary transition-colors">Features</a>
+                <a href="contact.html" class="text-sm font-medium text-gray-500 hover:text-primary transition-colors">Contact</a>
+            </div>
+
+            <div class="flex items-center gap-4">
+                <a href="sign-in.html" class="text-sm font-bold text-primary hover:text-secondary transition-colors">Login</a>
+                <a href="sign-up.html" class="rounded-xl bg-primary px-6 py-3 text-sm font-bold text-white shadow-lg shadow-blue-200 hover:bg-secondary transition-all">Sign Up</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="mt-20 flex min-h-[90vh] items-center px-[7%]">
+        <div class="grid grid-cols-1 items-center gap-16 lg:grid-cols-[1.2fr,1fr]">
+            <div class="animate-in">
+                <div class="mb-8 inline-flex items-center gap-2 rounded-full bg-blue-50 px-4 py-2 font-black tracking-widest text-[#1e3a8a] text-xs uppercase">
+                    <i data-lucide="sparkles" class="h-4 w-4"></i> Official Campus Portal
+                </div>
+                <h1 class="mb-8 text-[clamp(3.5rem,8vw,6rem)] font-black leading-[0.9] tracking-tighter text-[#1e3a8a]">
+                    WHERE <br />
+                    CURIOSITY <br />
+                    MEETS <span class="text-[#ef4444]">ACTION.</span>
+                </h1>
+                <p class="mb-12 max-w-[500px] text-xl font-medium leading-relaxed text-gray-500">
+                    Simplify campus activity management. Register, track attendance, and host events in seconds.
+                </p>
+                <div class="flex flex-wrap gap-4">
+                    <a href="sign-up.html" class="rounded-2xl bg-primary px-10 py-5 text-lg font-black text-white shadow-2xl shadow-blue-900/20 hover:bg-secondary transition-all">Start Exploring</a>
+                </div>
+            </div>
+
+            <div class="relative flex flex-col items-center justify-center p-8 lg:p-0">
+                <div class="absolute inset-0 z-0 bg-blue-100/50 blur-[120px]"></div>
+                <div class="relative z-10 w-full overflow-hidden rounded-[3rem] border-8 border-white bg-[#f8fafc] shadow-2xl group">
+                    <div class="flex min-h-[450px] items-center justify-center overflow-hidden">
+                        <img src="https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=1200" class="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110" alt="Collaboration">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Stats Section -->
+    <section class="mb-32 px-[7%]">
+        <div class="max-w-[1200px] mx-auto">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div class="rounded-3xl border border-gray-100 bg-[#f8fafc] p-10 text-center hover:shadow-xl hover:shadow-blue-900/5 transition-all">
+                    <h3 class="text-5xl font-black text-[#1e3a8a] mb-2">50+</h3>
+                    <p class="text-sm font-black text-[#64748b] uppercase tracking-[0.2em]">Monthly Events</p>
+                </div>
+                <div class="rounded-3xl border border-gray-100 bg-[#f8fafc] p-10 text-center hover:shadow-xl hover:shadow-blue-900/5 transition-all">
+                    <h3 class="text-5xl font-black text-[#1e3a8a] mb-2">200+</h3>
+                    <p class="text-sm font-black text-[#64748b] uppercase tracking-[0.2em]">Active Users</p>
+                </div>
+                <div class="rounded-3xl border border-gray-100 bg-[#f8fafc] p-10 text-center hover:shadow-xl hover:shadow-blue-900/5 transition-all">
+                    <h3 class="text-5xl font-black text-[#1e3a8a] mb-2">15+</h3>
+                    <p class="text-sm font-black text-[#64748b] uppercase tracking-[0.2em]">Clubs Joined</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-[#0f172a] py-24 text-white">
+        <div class="mx-auto max-w-[1400px] px-[7%]">
+            <div class="grid grid-cols-1 gap-16 md:grid-cols-2 lg:grid-cols-4">
+                <div class="space-y-6">
+                    <div class="flex items-center gap-2">
+                        <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-white font-black text-xl italic shadow-lg shadow-blue-600/20">A</div>
+                        <span class="text-xl font-black tracking-tighter">CampusHub</span>
+                    </div>
+                    <p class="text-gray-400 font-medium leading-relaxed">Redefining event management for the modern campus. Fast, reliable, and user-centric.</p>
+                </div>
+
+                <div>
+                    <h4 class="text-lg font-bold mb-6">Navigation</h4>
+                    <ul class="space-y-4 text-gray-400">
+                        <li><a href="index.html" class="hover:text-white transition-colors">Home</a></li>
+                        <li><a href="features.html" class="hover:text-white transition-colors">Features</a></li>
+                    </ul>
+                </div>
+
+                <div>
+                    <h4 class="text-lg font-bold mb-6">Support</h4>
+                    <ul class="space-y-4 text-gray-400">
+                        <li><a href="faq.html" class="hover:text-white transition-colors">FAQ</a></li>
+                        <li><a href="contact.html" class="hover:text-white transition-colors">Contact Us</a></li>
+                        <li><a href="privacy.html" class="hover:text-white transition-colors">Privacy Policy</a></li>
+                    </ul>
+                </div>
+
+                <div>
+                    <h4 class="text-lg font-bold mb-6">Newsletter</h4>
+                    <p class="text-gray-400 mb-6 text-sm">Stay updated with the latest events and campus announcements.</p>
+                    <div class="flex gap-2">
+                        <input type="email" placeholder="email@example.com" class="bg-white/10 border-0 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-white/20 flex-1">
+                        <button class="bg-white text-primary font-bold px-4 py-3 rounded-lg hover:bg-gray-100 transition-colors">Join</button>
+                    </div>
+                </div>
+            </div>
+            <div class="pt-12 border-t border-white/10 text-center text-gray-500 text-sm mt-20">
+                <p>&copy; 2026 CampusHub - College Event Management System. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>

@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="/js/auth-check.js"></script>
+    <script>AuthGuard.requireGuest();</script>
+    <title>Sign Up - College Event Management System</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#1e3a8a',
+                        secondary: '#3b82f6',
+                        accent: '#ef4444',
+                        background: '#ffffff',
+                        foreground: '#1e293b',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        .blur-3xl { filter: blur(64px); }
+        .animate-pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 0.3; } 50% { opacity: 0.4; } }
+        body { font-family: 'Inter', sans-serif; color: #1e293b; }
+    </style>
+</head>
+<body class="bg-[#F8FAFC]">
+    <!-- Navbar -->
+    <nav class="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-100">
+        <div class="mx-auto flex max-w-[1400px] items-center justify-between px-[7%] py-6">
+            <div class="flex items-center gap-2">
+                <a href="index.html" class="flex items-center gap-2">
+                    <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-white font-black text-xl italic">A</div>
+                    <span class="text-xl font-black tracking-tighter text-primary">CampusHub</span>
+                </a>
+            </div>
+            <div class="flex items-center gap-4">
+                <a href="sign-in.html" class="rounded-xl border border-primary px-6 py-3 text-sm font-bold text-primary hover:bg-primary hover:text-white transition-all">Sign In</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Background elements -->
+    <div class="fixed top-1/4 -left-20 w-96 h-96 bg-blue-100 rounded-full blur-3xl opacity-30 animate-pulse"></div>
+    <div class="fixed bottom-1/4 -right-20 w-96 h-96 bg-indigo-100 rounded-full blur-3xl opacity-30 animate-pulse delay-700"></div>
+
+    <!-- Back Button -->
+    <div class="fixed top-32 left-12 z-50">
+        <a href="index.html" class="flex items-center gap-2 text-primary font-black text-sm uppercase tracking-widest hover:gap-4 transition-all group">
+            <i data-lucide="arrow-left" class="w-5 h-5 group-hover:-translate-x-1 transition-transform"></i>
+            Go Back
+        </a>
+    </div>
+
+    <div class="flex items-center justify-center min-h-screen pt-28 pb-10 px-4 relative z-10">
+        <div id="authCard" class="bg-white/80 backdrop-blur-xl border border-white rounded-[2rem] p-6 w-full max-w-2xl shadow-[0_20px_50px_rgba(0,0,0,0.08)]">
+            <div class="text-center mb-6">
+                <div id="stageBadge" class="inline-flex items-center gap-2 mb-2 px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-xs font-bold tracking-tight uppercase">
+                    <i data-lucide="sparkles" class="w-3 h-3 text-amber-500"></i> Join Community Hub
+                </div>
+                <h1 id="stageTitle" class="text-3xl font-black text-[#1e3a8a] mb-1 tracking-tighter">Create Account</h1>
+                <p id="stageDesc" class="text-[#64748b] font-medium text-sm leading-snug">The ultimate platform for college community events.</p>
+            </div>
+
+            <form id="signUpForm" class="space-y-3">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div class="space-y-1">
+                        <label class="text-sm font-black text-[#64748b] uppercase tracking-widest px-1">Full Name</label>
+                        <div class="relative group">
+                            <i data-lucide="user" class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#94a3b8] group-focus-within:text-[#1e3a8a] transition-colors"></i>
+                            <input type="text" id="fullName" required placeholder="Display Name" class="w-full pl-12 pr-4 py-3 bg-[#f1f5f9] border-2 border-transparent rounded-[1.25rem] focus:outline-none focus:border-[#1e3a8a] focus:bg-white transition-all text-[#1e293b] font-medium">
+                        </div>
+                    </div>
+
+                    <div class="space-y-1.5">
+                        <label class="text-sm font-black text-[#64748b] uppercase tracking-widest px-1">Email / Username</label>
+                        <div class="relative group">
+                            <i data-lucide="mail" class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#94a3b8] group-focus-within:text-[#1e3a8a] transition-colors"></i>
+                            <input type="text" id="email" required placeholder="example@gmail.com" class="w-full pl-12 pr-4 py-3 bg-[#f1f5f9] border-2 border-transparent rounded-[1.25rem] focus:outline-none focus:border-[#1e3a8a] focus:bg-white transition-all text-[#1e293b] font-medium">
+                        </div>
+                    </div>
+
+                    <div class="space-y-1.5">
+                        <label class="text-sm font-black text-[#64748b] uppercase tracking-widest px-1">Registration No.</label>
+                        <div class="relative group">
+                            <i data-lucide="hash" class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#94a3b8] group-focus-within:text-[#1e3a8a] transition-colors"></i>
+                            <input type="text" id="regNo" required placeholder="RA23110260..." class="w-full pl-12 pr-4 py-3 bg-[#f1f5f9] border-2 border-transparent rounded-[1.25rem] focus:outline-none focus:border-[#1e3a8a] focus:bg-white transition-all text-[#1e293b] font-medium">
+                        </div>
+                    </div>
+
+
+                    <div class="space-y-1">
+                        <label class="text-xs font-black text-[#64748b] uppercase tracking-widest px-1">Date of Birth</label>
+                        <div class="relative group">
+                            <i data-lucide="calendar" class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#94a3b8] group-focus-within:text-[#1e3a8a] transition-colors"></i>
+                            <input type="date" id="dob" required class="w-full pl-12 pr-4 py-3 bg-[#f1f5f9] border-2 border-transparent rounded-[1.25rem] focus:outline-none focus:border-[#1e3a8a] focus:bg-white transition-all text-[#1e293b] font-medium">
+                        </div>
+                    </div>
+
+                    <div class="space-y-1">
+                        <label class="text-xs font-black text-[#64748b] uppercase tracking-widest px-1">Gender</label>
+                        <div class="relative group">
+                            <i data-lucide="users" class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#94a3b8] group-focus-within:text-[#1e3a8a] transition-colors z-10"></i>
+                            <select id="gender" required class="w-full pl-12 pr-4 py-3 bg-[#f1f5f9] border-2 border-transparent rounded-[1.25rem] focus:outline-none focus:border-[#1e3a8a] focus:bg-white transition-all text-[#1e293b] font-medium appearance-none cursor-pointer">
+                                <option value="" disabled selected>Select Gender</option>
+                                <option value="Male">Male</option>
+                                <option value="Female">Female</option>
+                                <option value="Other">Other</option>
+                            </select>
+                            <div class="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none z-10">
+                                <i data-lucide="chevron-down" class="w-4 h-4 text-[#94a3b8]"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="space-y-1 relative">
+                        <div class="flex justify-between items-center px-1">
+                            <label class="text-xs font-black text-[#64748b] uppercase tracking-widest">Secure Password</label>
+                            <div class="flex gap-1" id="strengthLights">
+                                <div class="w-2 h-2 rounded-full bg-slate-200 transition-colors duration-300" id="lightRed"></div>
+                                <div class="w-2 h-2 rounded-full bg-slate-200 transition-colors duration-300" id="lightOrange"></div>
+                                <div class="w-2 h-2 rounded-full bg-slate-200 transition-colors duration-300" id="lightGreen"></div>
+                            </div>
+                        </div>
+                        <div class="relative group">
+                            <i data-lucide="lock" class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#94a3b8] group-focus-within:text-[#1e3a8a] transition-colors"></i>
+                            <input type="password" id="password" required minlength="8" maxlength="16" placeholder="••••••••" class="w-full pl-12 pr-12 py-3 bg-[#f1f5f9] border-2 border-transparent rounded-[1.25rem] focus:outline-none focus:border-[#1e3a8a] focus:bg-white transition-all text-[#1e293b] font-medium">
+                            <button type="button" onclick="togglePasswordVisibility('password', this)" class="absolute right-10 top-1/2 -translate-y-1/2 text-[#94a3b8] hover:text-[#1e3a8a] transition-colors z-10">
+                                <i data-lucide="eye" class="w-5 h-5"></i>
+                            </button>
+                            <button type="button" onclick="suggestPassword()" class="absolute right-4 top-1/2 -translate-y-1/2 text-[#3b82f6] hover:text-[#1e3a8a] transition-colors z-10" title="Auto-suggest strong password">
+                                <i data-lucide="wand-2" class="w-5 h-5"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-1">
+                        <label class="text-xs font-black text-[#64748b] uppercase tracking-widest px-1">Phone Number</label>
+                        <div class="relative group">
+                            <i data-lucide="phone" class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#94a3b8] group-focus-within:text-[#1e3a8a] transition-colors"></i>
+                            <input type="tel" id="phone" required placeholder="+91 9876543210" class="w-full pl-12 pr-4 py-3 bg-[#f1f5f9] border-2 border-transparent rounded-[1.25rem] focus:outline-none focus:border-[#1e3a8a] focus:bg-white transition-all text-[#1e293b] font-medium">
+                        </div>
+                    </div>
+
+                    <div class="space-y-1 md:col-span-2">
+                        <label class="text-xs font-black text-[#64748b] uppercase tracking-widest px-1">Address / Location</label>
+                        <div class="relative group">
+                            <i data-lucide="map-pin" class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#94a3b8] group-focus-within:text-[#1e3a8a] transition-colors"></i>
+                            <input type="text" id="address" required placeholder="Hostel/Room No. or City" class="w-full pl-12 pr-4 py-3 bg-[#f1f5f9] border-2 border-transparent rounded-[1.25rem] focus:outline-none focus:border-[#1e3a8a] focus:bg-white transition-all text-[#1e293b] font-medium">
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-1.5 md:col-span-2">
+                        <label class="text-sm font-black text-[#64748b] uppercase tracking-widest px-1">Select Your Role</label>
+                        <div class="relative group">
+                            <i data-lucide="user-circle" class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#94a3b8] group-focus-within:text-[#1e3a8a] transition-colors"></i>
+                            <select id="userType" class="w-full pl-12 pr-4 py-3 bg-[#f1f5f9] border-2 border-transparent rounded-[1.25rem] focus:outline-none focus:border-[#1e3a8a] focus:bg-white transition-all text-[#1e293b] font-bold appearance-none cursor-pointer">
+                                <option value="student">Student Account</option>
+                                <option value="organizer">Event Organizer Access</option>
+                                <option value="admin">College Administrator Control</option>
+                            </select>
+                            <div class="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
+                                <i data-lucide="chevron-down" class="w-4 h-4 text-[#94a3b8]"></i>
+                            </div>
+                        </div>
+                    </div>
+                    
+                                    <div class="space-y-1.5 md:col-span-2 hidden animate-in" id="orgFieldContainer">
+                        <label class="text-sm font-black text-[#64748b] uppercase tracking-widest px-1">Select Club / Organization</label>
+                        <div class="relative group">
+                            <i data-lucide="building-2" class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#94a3b8] group-focus-within:text-[#1e3a8a] transition-colors z-10"></i>
+                            <select id="orgName" class="w-full pl-12 pr-10 py-3 bg-[#f1f5f9] border-2 border-transparent rounded-[1.25rem] focus:outline-none focus:border-[#1e3a8a] focus:bg-white transition-all text-[#1e293b] font-medium appearance-none cursor-pointer">
+                                <option value="" disabled selected>Select your organization...</option>
+                                <optgroup label="Technical & Research Teams">
+                                    <option value="SRMKZILLA">SRMKZILLA</option>
+                                    <option value="Google Developer Student Club (GDSC)">Google Developer Student Club (GDSC)</option>
+                                    <option value="Next Tech Lab">Next Tech Lab</option>
+                                    <option value="Data Science Community SRM">Data Science Community SRM</option>
+                                    <option value="IoT Alliance Club">IoT Alliance Club</option>
+                                    <option value="SRM Rudra">SRM Rudra</option>
+                                    <option value="Camber Racing">Camber Racing</option>
+                                    <option value="4ZE Racing">4ZE Racing</option>
+                                    <option value="SRM UAV">SRM UAV</option>
+                                    <option value="Quantum Computing Club">Quantum Computing Club</option>
+                                    <option value="Infi-alpha-Hyperloop">Infi-alpha-Hyperloop</option>
+                                </optgroup>
+                                <optgroup label="Cultural & Creative Clubs">
+                                    <option value="Dance Club">Dance Club</option>
+                                    <option value="Music Club">Music Club</option>
+                                    <option value="Literary Club">Literary Club</option>
+                                    <option value="Movies and Dramatics Club">Movies and Dramatics Club</option>
+                                    <option value="Photography Club">Photography Club</option>
+                                    <option value="Fashion Club">Fashion Club</option>
+                                    <option value="Astrophilia">Astrophilia</option>
+                                    <option value="Fine Arts Club">Fine Arts Club</option>
+                                </optgroup>
+                                <optgroup label="Professional Chapters & Societies">
+                                    <option value="ACM">ACM (Assoc. for Computing Machinery)</option>
+                                    <option value="IEEE">IEEE</option>
+                                    <option value="CSI">CSI (Computer Society of India)</option>
+                                    <option value="IEI">IEI (Institution of Engineers India)</option>
+                                    <option value="SAE">SAE (Society of Automotive Engineers)</option>
+                                    <option value="IET">IET</option>
+                                </optgroup>
+                                <optgroup label="Social & Special Interest Clubs">
+                                    <option value="Rotaract Club of SRM KTR">Rotaract Club of SRM KTR</option>
+                                    <option value="E-Cell">E-Cell (Entrepreneurship Cell)</option>
+                                    <option value="The Listening Space">The Listening Space</option>
+                                    <option value="SRM MUN">SRM MUN</option>
+                                    <option value="NSS">NSS (National Service Scheme)</option>
+                                </optgroup>
+                                <optgroup label="Department-Specific Clubs">
+                                    <option value="Pie Club">Pie Club</option>
+                                    <option value="Tekmedica">Tekmedica</option>
+                                    <option value="BIS Standards Club">BIS Standards Club</option>
+                                    <option value="Finance & Media Clubs">Finance & Media Clubs</option>
+                                </optgroup>
+                                <optgroup label="Major Fest Committees">
+                                    <option value="Aaruush">Aaruush</option>
+                                    <option value="Milan">Milan</option>
+                                </optgroup>
+                            </select>
+                            <div class="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none z-10">
+                                <i data-lucide="chevron-down" class="w-5 h-5 text-[#94a3b8]"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <button type="submit" id="submitBtn" class="w-full py-4 bg-[#1e3a8a] text-white rounded-[1.5rem] font-black text-lg hover:bg-[#1e40af] transition-all shadow-xl shadow-blue-900/10 flex items-center justify-center gap-3 mt-4">
+                    <span id="btnText">Send Verification Code</span>
+                    <i data-lucide="arrow-right" class="w-5 h-5"></i>
+                    <div id="loader" class="hidden w-6 h-6 border-3 border-white/30 border-t-white rounded-full animate-spin"></div>
+                </button>
+            </form>
+
+            <!-- Verification Stage (Hidden) -->
+            <form id="otpForm" class="hidden space-y-6">
+                <div class="space-y-2 text-center">
+                    <label class="text-sm font-black text-[#64748b] uppercase tracking-widest px-1 block">Enter 6-Digit OTP</label>
+                    <input type="text" id="otpCode" required maxLength="6" placeholder="0 0 0 0 0 0" class="w-full px-4 py-6 bg-[#f1f5f9] border-2 border-[#1e3a8a]/20 rounded-[1.5rem] focus:outline-none focus:border-[#1e3a8a] focus:bg-white transition-all text-[#1e3a8a] text-3xl font-black tracking-[0.5em] text-center">
+                    <div class="pt-4 flex flex-col items-center gap-2">
+                        <button type="button" id="resendBtn" disabled onclick="handleResend()" class="text-sm font-black text-gray-400 cursor-not-allowed transition-all hover:text-[#1e3a8a] disabled:hover:text-gray-400">
+                            Didn't receive code? Resend OTP
+                        </button>
+                        <p id="timerDisplay" class="text-[11px] font-bold text-amber-500 uppercase tracking-widest animate-pulse">Wait 60s to resend</p>
+                    </div>
+                </div>
+                <button type="submit" class="w-full py-5 bg-[#1e3a8a] text-white rounded-[1.5rem] font-black text-lg hover:bg-[#1e40af] transition-all shadow-xl shadow-blue-900/10 flex items-center justify-center gap-3">
+                    Verify & Complete <i data-lucide="check-circle-2" class="w-5 h-5"></i>
+                </button>
+                <button type="button" onclick="resetForm()" class="w-full text-center text-sm font-bold text-[#64748b] hover:text-[#1e3a8a] transition-colors">Back to Registration</button>
+            </form>
+
+            <div class="text-center mt-10">
+                <p class="text-[#64748b] font-medium">Already have an account? <a href="sign-in.html" class="text-[#1e3a8a] font-black hover:underline inline-flex items-center gap-1 group">Sign In instead <i data-lucide="shield-check" class="w-4 h-4 text-blue-500 group-hover:scale-110 transition-transform"></i></a></p>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        lucide.createIcons();
+
+        // Already Logged-In Check
+        const user = JSON.parse(localStorage.getItem('user'));
+        if(user) {
+            const routes = { student: 'dashboard/student.html', organizer: 'dashboard/organizer.html', admin: 'dashboard/admin.html' };
+            window.location.href = routes[user.role] || 'index.html';
+        }
+
+        const signUpForm = document.getElementById('signUpForm');
+        const otpForm = document.getElementById('otpForm');
+        const submitBtn = document.getElementById('submitBtn');
+        const btnText = document.getElementById('btnText');
+        const loader = document.getElementById('loader');
+
+        const stageBadge = document.getElementById('stageBadge');
+        const stageTitle = document.getElementById('stageTitle');
+        const stageDesc = document.getElementById('stageDesc');
+
+        function togglePasswordVisibility(inputId, btn) {
+            const input = document.getElementById(inputId);
+            const isPassword = input.type === 'password';
+            
+            // Toggle type
+            input.type = isPassword ? 'text' : 'password';
+            
+            // Update Icon with snappy response
+            btn.innerHTML = `<i data-lucide="${isPassword ? 'eye-off' : 'eye'}" class="w-5 h-5"></i>`;
+            lucide.createIcons();
+            
+            // Subtle tactile feedback
+            btn.style.transform = 'translateY(-50%) scale(0.9)';
+            setTimeout(() => btn.style.transform = 'translateY(-50%) scale(1)', 100);
+        }
+
+        const userTypeSelect = document.getElementById('userType');
+        const orgFieldContainer = document.getElementById('orgFieldContainer');
+        const orgNameInput = document.getElementById('orgName');
+
+        userTypeSelect.addEventListener('change', (e) => {
+            if (e.target.value === 'organizer' || e.target.value === 'admin') {
+                orgFieldContainer.classList.remove('hidden');
+                orgNameInput.required = true;
+            } else {
+                orgFieldContainer.classList.add('hidden');
+                orgNameInput.required = false;
+                orgNameInput.value = '';
+            }
+        });
+
+        signUpForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            // Build the payload
+            const payload = {
+                fullName: document.getElementById('fullName').value,
+                email: document.getElementById('email').value,
+                regNo: document.getElementById('regNo').value,
+                password: document.getElementById('password').value,
+                phone: document.getElementById('phone').value,
+                address: document.getElementById('address').value,
+                dob: document.getElementById('dob').value,
+                userType: document.getElementById('userType').value,
+                orgName: document.getElementById('orgName').value,
+                gender: document.getElementById('gender').value,
+            };
+
+            btnText.classList.add('hidden');
+            loader.classList.remove('hidden');
+            submitBtn.disabled = true;
+
+            try {
+                const response = await fetch('/api/auth/send-otp', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.error || "Failed to send OTP");
+                }
+                
+                // Show OTP form
+                signUpForm.classList.add('hidden');
+                otpForm.classList.remove('hidden');
+
+                stageBadge.innerHTML = '<i data-lucide="check-circle-2" class="w-4 h-4 text-green-500"></i> Verification Stage';
+                stageTitle.textContent = "Verify Email";
+                stageDesc.textContent = `We've sent a 6-digit code to ${payload.email}`;
+                lucide.createIcons();
+                
+                startResendTimer();
+
+            } catch (error) {
+                alert(error.message);
+            } finally {
+                btnText.classList.remove('hidden');
+                loader.classList.add('hidden');
+                submitBtn.disabled = false;
+            }
+        });
+
+        otpForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const otpCode = document.getElementById('otpCode').value.replace(/\s/g, ''); // Extract and strip spaces
+            const email = document.getElementById('email').value;
+            const userType = document.getElementById('userType').value;
+            
+            const verifyBtn = otpForm.querySelector('button[type="submit"]');
+            const originalText = verifyBtn.innerHTML;
+            verifyBtn.innerHTML = "Verifying...";
+            verifyBtn.disabled = true;
+            
+            try {
+                const response = await fetch('/api/auth/verify-otp', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: email, userType: userType, otp: otpCode })
+                });
+                
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.error || "Verification failed");
+                }
+                
+                alert(data.message); // Will show "Awaiting admin approval" for organizers
+                window.location.href = 'sign-in.html';
+                
+            } catch (error) {
+                alert(error.message);
+                verifyBtn.innerHTML = originalText;
+                verifyBtn.disabled = false;
+            }
+        });
+
+        function resetForm() {
+            signUpForm.classList.remove('hidden');
+            otpForm.classList.add('hidden');
+            stageBadge.innerHTML = '<i data-lucide="sparkles" class="w-4 h-4 text-amber-500"></i> Join Community Hub';
+            stageTitle.textContent = "Create Account";
+            stageDesc.textContent = "The ultimate platform for community events.";
+            lucide.createIcons();
+        }
+
+        // Password Strength & Suggestion Logic
+        const passInput = document.getElementById('password');
+        const lightRed = document.getElementById('lightRed');
+        const lightOrange = document.getElementById('lightOrange');
+        const lightGreen = document.getElementById('lightGreen');
+
+        passInput.addEventListener('input', () => {
+            const val = passInput.value;
+            lightRed.className = 'w-2 h-2 rounded-full transition-colors duration-300 ' + (val.length > 0 ? 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.6)]' : 'bg-slate-200');
+            lightOrange.className = 'w-2 h-2 rounded-full transition-colors duration-300 ' + (val.length >= 6 ? 'bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.6)]' : 'bg-slate-200');
+            
+            // Check for strong password: >= 8 chars, has number, has special char, has uppercase
+            const isStrong = val.length >= 8 && /[A-Z]/.test(val) && /[0-9]/.test(val) && /[^A-Za-z0-9]/.test(val);
+            lightGreen.className = 'w-2 h-2 rounded-full transition-colors duration-300 ' + (isStrong ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]' : 'bg-slate-200');
+        });
+
+        function suggestPassword() {
+            const length = Math.floor(Math.random() * (16 - 12 + 1)) + 12; // 12 to 16 chars
+            const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+~`|}{[]:;?><,./-=";
+            let generated = "";
+            
+            // Guarantee at least one of each required type
+            generated += "ABCDEFGHIJKLMNOPQRSTUVWXYZ"[Math.floor(Math.random() * 26)];
+            generated += "abcdefghijklmnopqrstuvwxyz"[Math.floor(Math.random() * 26)];
+            generated += "0123456789"[Math.floor(Math.random() * 10)];
+            generated += "!@#$%^&*"[Math.floor(Math.random() * 8)];
+            
+            for (let i = 4; i < length; i++) {
+                generated += charset[Math.floor(Math.random() * charset.length)];
+            }
+            
+            // Shuffle
+            generated = generated.split('').sort(() => 0.5 - Math.random()).join('');
+            
+            passInput.value = generated;
+            passInput.type = 'text'; // Briefly show what was generated
+            
+            // Re-hide password after 3 seconds
+            setTimeout(() => { passInput.type = 'password'; lucide.createIcons(); }, 3000);
+            
+            // trigger input event to light up visualizer
+            passInput.dispatchEvent(new Event('input'));
+        }
+
+        // Resend logic
+        let resendInterval;
+        function startResendTimer() {
+            const btn = document.getElementById('resendBtn');
+            const display = document.getElementById('timerDisplay');
+            let seconds = 60;
+            
+            btn.disabled = true;
+            btn.classList.add('text-gray-400', 'cursor-not-allowed');
+            btn.classList.remove('text-[#1e3a8a]', 'cursor-pointer');
+            display.classList.remove('hidden');
+            
+            clearInterval(resendInterval);
+            resendInterval = setInterval(() => {
+                seconds--;
+                display.textContent = `Wait ${seconds}s to resend`;
+                if (seconds <= 0) {
+                    clearInterval(resendInterval);
+                    btn.disabled = false;
+                    btn.classList.remove('text-gray-400', 'cursor-not-allowed');
+                    btn.classList.add('text-[#1e3a8a]', 'cursor-pointer');
+                    display.classList.add('hidden');
+                }
+            }, 1000);
+        }
+
+        async function handleResend() {
+            const payload = {
+                fullName: document.getElementById('fullName').value,
+                email: document.getElementById('email').value,
+                regNo: document.getElementById('regNo').value,
+                password: document.getElementById('password').value,
+                phone: document.getElementById('phone').value,
+                address: document.getElementById('address').value,
+                dob: document.getElementById('dob').value,
+                userType: document.getElementById('userType').value,
+                orgName: document.getElementById('orgName').value,
+                gender: document.getElementById('gender').value,
+            };
+
+            const resendBtn = document.getElementById('resendBtn');
+            resendBtn.textContent = "Sending...";
+            
+            try {
+                const response = await fetch('/api/auth/send-otp', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                
+                if (response.ok) {
+                    alert("A new OTP has been sent to your email.");
+                    startResendTimer();
+                } else {
+                    const data = await response.json();
+                    alert(data.error || "Failed to resend");
+                }
+            } catch (e) {
+                alert("Connection failed");
+            } finally {
+                resendBtn.textContent = "Didn't receive code? Resend OTP";
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="/js/auth-check.js"></script>
+    <script>AuthGuard.requireAuth(['admin']);</script>
+    <title>Admin Profile - CampusHub</title>
+    <link rel="icon" type="image/svg+xml" href="../favicon.svg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#1e3a8a',
+                        secondary: '#3b82f6',
+                        accent: '#ef4444',
+                        background: '#f8fafc',
+                        foreground: '#1e293b',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        .animate-in { animation: fadeIn 0.3s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-[#f8fafc] text-[#1e293b]">
+    <div class="grid min-h-screen grid-cols-[280px_1fr]">
+        <!-- Sidebar -->
+        <aside class="flex flex-col border-r border-[#e2e8f0] bg-white p-8">
+            <div class="mb-12 flex items-center gap-3">
+                <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-white font-black text-xl italic shadow-lg shadow-blue-200">A</div>
+                <span class="text-xl font-black tracking-tighter text-primary">ADMIN CONSOLE</span>
+            </div>
+
+            <nav class="flex-1 space-y-2">
+                <a href="admin.html" class="flex w-full items-center gap-4 rounded-xl px-5 py-4 text-sm font-bold transition-all border-l-4 border-transparent hover:bg-gray-50 text-gray-500 hover:text-primary group">
+                    <i data-lucide="shield" class="h-5 w-5"></i> Admin Dashboard
+                </a>
+                <a href="admin-profile.html" class="flex w-full items-center gap-4 rounded-xl px-5 py-4 text-sm font-bold transition-all border-l-4 border-primary bg-blue-50 text-primary">
+                    <i data-lucide="user-cog" class="h-5 w-5"></i> System Profile
+                </a>
+            </nav>
+
+            <div class="mt-auto pt-8 border-t border-gray-100">
+                <button onclick="AuthGuard.logout()" class="flex w-full items-center gap-4 px-5 py-3 text-sm font-bold text-red-500 hover:text-red-600 transition-colors">
+                    <i data-lucide="log-out" class="h-5 w-5"></i> Terminate Session
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="p-10 overflow-y-auto">
+            <header class="py-12 flex items-center justify-between">
+                <div>
+                    <h1 class="text-4xl font-black text-primary tracking-tight">System Admin Profile</h1>
+                    <p class="text-gray-500 font-bold uppercase tracking-widest text-xs mt-1">Global Configuration & Identity</p>
+                </div>
+            </header>
+
+            <div class="mx-auto max-w-2xl animate-in">
+                <div class="bg-white rounded-[2rem] p-10 shadow-xl shadow-blue-900/5 border border-gray-50 overflow-hidden">
+                    <div class="flex items-center gap-6 mb-10">
+                        <div class="h-20 w-20 rounded-2xl bg-black text-white flex items-center justify-center font-black text-3xl italic shadow-2xl">A</div>
+                        <div>
+                            <h2 class="text-2xl font-black text-primary" id="profileNameDisplay">Admin User</h2>
+                            <span class="inline-block mt-1 px-3 py-1 bg-red-100 text-red-600 rounded-full text-[10px] font-black uppercase tracking-widest">Global Super User</span>
+                        </div>
+                   </div>
+
+                    <form id="adminProfileForm" class="space-y-6">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="space-y-2">
+                                <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Admin Name</label>
+                                <input type="text" id="name" required class="w-full border-b border-gray-100 py-2 font-bold text-primary focus:border-primary outline-none transition-all">
+                            </div>
+                            <div class="space-y-2">
+                                 <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Admin Club/Dept</label>
+                                 <input type="text" id="orgName" disabled placeholder="e.g. Cultural Council" class="w-full border-b border-gray-100 py-2 font-bold text-gray-400 outline-none bg-transparent cursor-not-allowed">
+                             </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="space-y-2">
+                                <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Access Protocol</label>
+                                <input type="text" id="accessLevel" disabled value="SUPER_USER" class="w-full border-b border-gray-100 py-2 font-bold text-gray-400 outline-none bg-transparent uppercase tracking-wider">
+                            </div>
+                            <div class="space-y-2">
+                                <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest">System Email</label>
+                                <input type="email" id="email" required disabled class="w-full border-b border-gray-100 py-2 font-bold text-gray-400 cursor-not-allowed outline-none bg-transparent">
+                            </div>
+                        </div>
+
+                        <div class="p-6 bg-red-50 rounded-2xl border border-red-100">
+                             <div class="flex items-center gap-3 text-red-600 mb-2">
+                                <i data-lucide="alert-triangle" class="w-5 h-5"></i>
+                                <span class="font-black text-xs uppercase tracking-widest">Security Notice</span>
+                            </div>
+                            <p class="text-[11px] text-red-500 font-medium leading-relaxed">You possess root-level authorization for the entire CampusHub platform. Ensure your endpoint security is maintained.</p>
+                        </div>
+
+                        <button type="submit" class="w-full py-4 bg-primary text-white rounded-xl font-bold text-base hover:bg-black transition-all shadow-lg shadow-blue-900/10 active:scale-[0.98]">
+                            Update Admin Identity
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Club Integrations -->
+                <div class="mt-8 bg-white rounded-[2rem] p-10 shadow-xl border border-blue-100 overflow-hidden relative">
+                    <div class="mb-8 border-b border-gray-100 pb-4 flex items-center gap-3">
+                        <i data-lucide="credit-card" class="w-6 h-6 text-primary"></i>
+                        <h2 class="text-xl font-black text-primary tracking-tight">Club Payment Integrations</h2>
+                    </div>
+                    <form id="integrationForm" class="space-y-6">
+                        <div class="space-y-2">
+                            <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Club Namespace</label>
+                            <input type="text" id="clubNameIntegrations" disabled placeholder="Loading club..." class="w-full border-b border-gray-200 py-3 font-bold text-primary outline-none bg-transparent cursor-not-allowed">
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pb-2">
+                            <div class="space-y-2">
+                                <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Razorpay Key ID</label>
+                                <input type="text" id="rzpKeyId" placeholder="rzp_test_xxxxxx" class="w-full border-b border-gray-200 py-2 font-bold text-slate-700 focus:border-primary outline-none transition-all placeholder:font-medium placeholder:text-gray-300">
+                            </div>
+                            <div class="space-y-2">
+                                <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Razorpay Key Secret</label>
+                                <input type="password" id="rzpKeySecret" placeholder="••••••••••••••••" class="w-full border-b border-gray-200 py-2 font-bold text-slate-700 focus:border-primary outline-none transition-all placeholder:font-medium placeholder:text-gray-300">
+                            </div>
+                        </div>
+                        <button type="submit" class="w-full py-4 bg-slate-900 text-white rounded-xl font-bold hover:bg-black transition-all shadow-lg active:scale-[0.98]">
+                            Save Club Integrations
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        lucide.createIcons();
+
+        const form = document.getElementById('adminProfileForm');
+
+        let currentClubId = null;
+
+        // LOAD PROFILE FROM SERVER
+        async function loadProfile() {
+            try {
+                const response = await AuthGuard.secureFetch('/api/admin/profile/get', {
+                    headers: {  }
+                });
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.error);
+                
+                const u = data.user;
+                document.getElementById('name').value = u.full_name || '';
+                document.getElementById('profileNameDisplay').textContent = u.full_name || 'Administrator';
+                document.getElementById('email').value = u.email || '';
+                document.getElementById('orgName').value = u.club_name || u.organization_name || 'No Club Attached';
+                document.getElementById('accessLevel').value = data.accessLevel || 'SUPER_USER';
+
+                document.getElementById('clubNameIntegrations').value = u.club_name || 'No Club Attached';
+                document.getElementById('rzpKeyId').value = u.razorpay_key_id || '';
+                document.getElementById('rzpKeySecret').value = u.razorpay_key_secret || '';
+                currentClubId = u.club_id;
+            } catch (error) {
+                console.error("Load failed:", error);
+                if (error.message.includes('token') || error.message.includes('401')) {
+                    alert("Session expired. Please log in again.");
+                    AuthGuard.logout();
+                }
+            }
+        }
+
+        loadProfile();
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            try {
+                const res = await AuthGuard.secureFetch('/api/admin/profile/update', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                         
+                    },
+                    body: JSON.stringify({
+                        full_name: document.getElementById('name').value
+                    })
+                });
+                
+                if (!res.ok) throw new Error("Failed to update admin profile");
+                alert('Admin identity updated successfully!');
+                window.location.reload();
+            } catch (err) {
+                Swal.fire("Error", err.message, "error");
+            }
+        });
+
+        // INTEGRATIONS LOGIC
+        const intForm = document.getElementById('integrationForm');
+
+        intForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if(!currentClubId) return Swal.fire("Error", "You are not assigned to a club namespace.", "warning");
+
+            try {
+                Swal.fire({title: 'Saving...', didOpen: () => { Swal.showLoading(); }});
+                const res = await AuthGuard.secureFetch('/api/admin/profile/update-club-keys', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        club_id: currentClubId,
+                        razorpay_key_id: document.getElementById('rzpKeyId').value,
+                        razorpay_key_secret: document.getElementById('rzpKeySecret').value
+                    })
+                });
+                
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error);
+                
+                Swal.fire('Saved!', 'Club integrations updated successfully.', 'success');
+            } catch (err) {
+                Swal.fire("Save Error", err.message, "error");
+            }
+        });
+    </script>
+</body>
+</html>

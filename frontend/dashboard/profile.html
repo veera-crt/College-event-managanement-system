@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="/js/auth-check.js"></script>
+    <script>AuthGuard.requireAuth(['student', 'organizer', 'admin']);</script>
+    <title>Profile - College Event Management System</title>
+    <link rel="icon" type="image/svg+xml" href="../favicon.svg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#1e3a8a',
+                        secondary: '#3b82f6',
+                        accent: '#ef4444',
+                        background: '#f8fafc',
+                        foreground: '#1e293b',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        .animate-in { animation: fadeIn 0.3s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        body { font-family: 'Inter', sans-serif; }
+        input:disabled, select:disabled { cursor: not-allowed; opacity: 0.7; }
+    </style>
+</head>
+<body class="bg-[#f8fafc] text-[#1e293b]">
+    <div class="grid min-h-screen grid-cols-[280px_1fr]">
+        <!-- Sidebar -->
+        <aside class="flex flex-col border-r border-[#e2e8f0] bg-white p-8">
+            <div class="mb-12 flex items-center gap-3">
+                <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-white font-black text-xl italic shadow-lg shadow-blue-200">A</div>
+                <span class="text-xl font-black tracking-tighter text-primary">STUDENT HUB</span>
+            </div>
+
+            <nav class="flex-1 space-y-2">
+                <a href="student.html" class="flex w-full items-center gap-4 rounded-xl px-5 py-4 text-sm font-bold text-gray-500 hover:bg-gray-50 hover:text-primary transition-all">
+                    <i data-lucide="layout-dashboard" class="h-5 w-5"></i> Dashboard
+                </a>
+                <a href="profile.html" class="flex w-full items-center gap-4 rounded-xl px-5 py-4 text-sm font-bold bg-blue-50 text-primary border-l-4 border-primary">
+                    <i data-lucide="user" class="h-5 w-5"></i> Profile
+                </a>
+            </nav>
+
+            <div class="mt-auto pt-8 border-t border-gray-100">
+                <button onclick="logout()" class="flex w-full items-center gap-4 px-5 py-3 text-sm font-bold text-red-500 hover:text-red-600 transition-colors">
+                    <i data-lucide="log-out" class="h-5 w-5"></i> Sign Out
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="p-12 overflow-y-auto">
+            <header class="mb-12 flex items-center justify-between">
+                <div>
+                    <h1 class="text-4xl font-black text-primary tracking-tight" id="headerName">User Profile</h1>
+                    <p class="text-gray-500 font-bold uppercase tracking-widest text-xs mt-1">STUDENT</p>
+                </div>
+            </header>
+
+            <div class="mx-auto max-w-[800px] rounded-[2rem] bg-white p-12 shadow-xl shadow-blue-900/5 animate-in">
+                <div class="mb-12 flex items-center justify-between border-b border-gray-100 pb-8">
+                    <h2 class="text-2xl font-black text-primary tracking-tight">Personal Details</h2>
+                    <button id="editToggle" onclick="toggleEdit()" class="flex items-center gap-2 font-black text-red-500 hover:scale-105 transition-transform">
+                        <i data-lucide="edit-3" class="h-5 w-5"></i>
+                        <span id="editText">Edit</span>
+                    </button>
+                </div>
+
+                <form id="profileForm" class="space-y-8">
+                    <div class="grid grid-cols-[200px_1fr] items-center gap-8">
+                        <label class="text-sm font-black text-gray-400 uppercase tracking-widest">Full Name</label>
+                        <input type="text" id="name" disabled class="w-full border-b border-gray-100 py-3 font-bold text-[#1e293b] focus:border-primary outline-none transition-all">
+                    </div>
+
+                    <div class="grid grid-cols-[200px_1fr] items-center gap-8">
+                        <label class="text-sm font-black text-gray-400 uppercase tracking-widest">Faculty Mentor</label>
+                        <input type="text" id="facultyName" disabled placeholder="Recommendation faculty name" class="w-full border-b border-gray-100 py-3 font-bold text-[#1e293b] focus:border-primary outline-none transition-all">
+                    </div>
+
+                    <div class="grid grid-cols-[200px_1fr] items-center gap-8">
+                        <label class="text-sm font-black text-gray-400 uppercase tracking-widest">Faculty Email</label>
+                        <input type="email" id="facultyEmail" disabled placeholder="faculty@srmist.edu.in" class="w-full border-b border-gray-100 py-3 font-bold text-[#1e293b] focus:border-primary outline-none transition-all">
+                    </div>
+
+                    <div class="grid grid-cols-[200px_1fr] items-center gap-8">
+                        <label class="text-sm font-black text-gray-400 uppercase tracking-widest">Date of Birth</label>
+                        <div class="flex items-center gap-4">
+                            <input type="text" id="dobDay" maxlength="2" placeholder="DD" disabled class="w-16 border-b border-gray-100 py-3 text-center font-bold text-[#1e293b] focus:border-primary outline-none transition-all">
+                            <span class="text-gray-300">/</span>
+                            <input type="text" id="dobMonth" maxlength="2" placeholder="MM" disabled class="w-16 border-b border-gray-100 py-3 text-center font-bold text-[#1e293b] focus:border-primary outline-none transition-all">
+                            <span class="text-gray-300">/</span>
+                            <input type="text" id="dobYear" maxlength="4" placeholder="YYYY" disabled class="w-24 border-b border-gray-100 py-3 text-center font-bold text-[#1e293b] focus:border-primary outline-none transition-all">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-[200px_1fr] items-center gap-8">
+                        <label class="text-sm font-black text-gray-400 uppercase tracking-widest">Registration No</label>
+                        <input type="text" id="regNo" disabled class="w-full border-b border-gray-100 py-3 font-bold text-gray-400 cursor-not-allowed outline-none">
+                    </div>
+
+                    <div class="grid grid-cols-[200px_1fr] items-center gap-8" id="editActions" style="display: none;">
+                        <div></div>
+                        <div class="flex gap-4">
+                            <button type="button" onclick="toggleEdit()" class="flex-1 rounded-xl border border-red-500 py-4 font-black text-red-500 hover:bg-red-50 transition-all">CANCEL</button>
+                            <button type="submit" class="flex-1 rounded-xl bg-green-600 py-4 font-black text-white hover:bg-green-700 transition-all shadow-xl shadow-green-900/20">UPDATE</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </main>
+    </div>
+
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        lucide.createIcons();
+
+        // Restriction Check
+        const user = JSON.parse(localStorage.getItem('user'));
+        if(!user) {
+            window.location.href = "../sign-in.html";
+        }
+
+        const profileForm = document.getElementById('profileForm');
+        const editActions = document.getElementById('editActions');
+        const editText = document.getElementById('editText');
+        const headerName = document.getElementById('headerName');
+
+        const profile = user.profile || {};
+
+        document.getElementById('name').value = user.full_name || '';
+        document.getElementById('regNo').value = user.registration_no || user.regNo || '';
+        document.getElementById('facultyName').value = profile.facultyName || '';
+        document.getElementById('facultyEmail').value = profile.facultyEmail || '';
+        
+        if(profile.dob) {
+            const parts = profile.dob.split('-');
+            document.getElementById('dobYear').value = parts[0] || '';
+            document.getElementById('dobMonth').value = parts[1] || '';
+            document.getElementById('dobDay').value = parts[2] || '';
+        }
+
+        headerName.textContent = user.full_name || "Account Settings";
+
+        function toggleEdit() {
+            isEditing = !isEditing;
+            const inputs = profileForm.querySelectorAll('input:not(#regNo)');
+            inputs.forEach(input => input.disabled = !isEditing);
+            
+            editActions.style.display = isEditing ? 'grid' : 'none';
+            editText.textContent = isEditing ? 'Saving...' : 'Edit';
+            editText.className = isEditing ? 'text-green-600' : 'text-red-500';
+            
+            if(!isEditing) {
+                editText.textContent = 'Edit';
+                editText.className = 'text-red-500';
+            }
+        }
+
+        profileForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            const updatedUser = {
+                ...user,
+                full_name: document.getElementById('name').value,
+                profile: {
+                    ...profile,
+                    facultyName: document.getElementById('facultyName').value,
+                    facultyEmail: document.getElementById('facultyEmail').value,
+                    dob: `${document.getElementById('dobYear').value}-${document.getElementById('dobMonth').value}-${document.getElementById('dobDay').value}`
+                }
+            };
+
+            localStorage.setItem('user', JSON.stringify(updatedUser));
+            alert('Profile updated successfully!');
+            headerName.textContent = updatedUser.full_name;
+            toggleEdit();
+        });
+
+        function logout() {
+            localStorage.clear();
+            window.location.href = "../sign-in.html";
+        }
+    </script>
+</body>
+</html>

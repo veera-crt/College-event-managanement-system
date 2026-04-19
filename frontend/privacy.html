@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Privacy Policy - College Event Management System</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#1e3a8a',
+                        secondary: '#3b82f6',
+                        accent: '#ef4444',
+                        background: '#ffffff',
+                        foreground: '#1e293b',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+    <script>
+        // Global Session Check: Auto-redirect logged-in users to their dashboard
+        const sessionUser = JSON.parse(localStorage.getItem('user'));
+        if (sessionUser && sessionUser.role) {
+            const dashboardRoutes = { 
+                student: 'dashboard/student.html', 
+                organizer: 'dashboard/organizer.html', 
+                admin: 'dashboard/admin.html' 
+            };
+            window.location.href = dashboardRoutes[sessionUser.role] || 'index.html';
+        }
+    </script>
+</head>
+<body class="bg-white text-[#1e293b]">
+    <!-- Navbar -->
+    <nav class="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-100">
+        <div class="mx-auto flex max-w-[1400px] items-center justify-between px-[7%] py-6">
+            <div class="flex items-center gap-2">
+                <a href="index.html" class="flex items-center gap-2">
+                    <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-white font-black text-xl italic">A</div>
+                    <span class="text-xl font-black tracking-tighter text-primary">CampusHub</span>
+                </a>
+            </div>
+            
+            <div class="hidden items-center gap-10 md:flex">
+                <a href="index.html" class="text-sm font-medium text-gray-500 hover:text-primary transition-colors">Home</a>
+                <a href="index.html#features" class="text-sm font-medium text-gray-500 hover:text-primary transition-colors">Features</a>
+                <a href="contact.html" class="text-sm font-medium text-gray-500 hover:text-primary transition-colors">Contact</a>
+            </div>
+
+            <div class="flex items-center gap-4">
+                <a href="sign-in.html" class="text-sm font-bold text-primary hover:text-secondary transition-colors">Login</a>
+                <a href="sign-up.html" class="rounded-xl bg-primary px-6 py-3 text-sm font-bold text-white shadow-lg shadow-blue-200 hover:bg-secondary transition-all">Sign Up</a>
+            </div>
+        </div>
+    </nav>
+
+    <section class="mx-auto max-w-[1000px] px-[7%] py-40">
+        <h1 class="text-6xl font-black text-primary mb-12 tracking-tighter text-center">Privacy Policy</h1>
+
+        <div class="space-y-12">
+            <div class="space-y-4">
+                <h2 class="text-3xl font-black text-primary">1. Information We Collect</h2>
+                <p class="text-lg text-gray-500 leading-relaxed">
+                    We collect information that you provide when creating an account, such as your full name, email address, and student/staff ID. We also collect usage data to improve your experience.
+                </p>
+            </div>
+
+            <div class="space-y-4">
+                <h2 class="text-3xl font-black text-primary">2. How We Use Information</h2>
+                <p class="text-lg text-gray-500 leading-relaxed">
+                    Your information is used to:
+                    <ul class="list-disc pl-6 space-y-2 mt-4 font-bold text-primary">
+                        <li>Manage your registrations and dashboard.</li>
+                        <li>Communicate important event updates.</li>
+                        <li>Verify event attendance and eligibility.</li>
+                        <li>Improve our platform's layout and functionality.</li>
+                    </ul>
+                </p>
+            </div>
+
+            <div class="space-y-4">
+                <h2 class="text-3xl font-black text-primary">3. Sharing Your Information</h2>
+                <p class="text-lg text-gray-500 leading-relaxed">
+                    We do not sell your personal information. Your information is only shared with event organizers and college administrators for the purpose of managing the specific events you register for.
+                </p>
+            </div>
+
+            <div class="space-y-4">
+                <h2 class="text-3xl font-black text-primary">4. Data Security</h2>
+                <p class="text-lg text-gray-500 leading-relaxed">
+                    We use industry-standard security measures to protect your personal information from unauthorized access, disclosure, or destruction.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-primary text-white py-24">
+        <div class="mx-auto max-w-[1400px] px-[7%] text-center">
+            <p>&copy; 2026 CampusHub - College Event Management System</p>
+        </div>
+    </footer>
+
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>

@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Features - College Event Management System</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#1e3a8a',
+                        secondary: '#3b82f6',
+                        accent: '#ef4444',
+                        background: '#ffffff',
+                        foreground: '#1e293b',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+    <script>
+        // Global Session Check: Auto-redirect logged-in users to their dashboard
+        const sessionUser = JSON.parse(localStorage.getItem('user'));
+        if (sessionUser && sessionUser.role) {
+            const dashboardRoutes = { 
+                student: 'dashboard/student.html', 
+                organizer: 'dashboard/organizer.html', 
+                admin: 'dashboard/admin.html' 
+            };
+            window.location.href = dashboardRoutes[sessionUser.role] || 'index.html';
+        }
+    </script>
+</head>
+<body class="bg-white text-[#1e293b]">
+    <!-- Navbar -->
+    <nav class="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-100">
+        <div class="mx-auto flex max-w-[1400px] items-center justify-between px-[7%] py-6">
+            <div class="flex items-center gap-2">
+                <a href="index.html" class="flex items-center gap-2">
+                    <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-white font-black text-xl italic">A</div>
+                    <span class="text-xl font-black tracking-tighter text-primary">CampusHub</span>
+                </a>
+            </div>
+            
+            <div class="hidden items-center gap-10 md:flex">
+                <a href="index.html" class="text-sm font-medium text-gray-500 hover:text-primary transition-colors">Home</a>
+                <a href="features.html" class="text-sm font-bold text-primary transition-colors">Features</a>
+                <a href="contact.html" class="text-sm font-medium text-gray-500 hover:text-primary transition-colors">Contact</a>
+            </div>
+
+            <div class="flex items-center gap-4">
+                <a href="sign-in.html" class="text-sm font-bold text-primary hover:text-secondary transition-colors">Login</a>
+                <a href="sign-up.html" class="rounded-xl bg-primary px-6 py-3 text-sm font-bold text-white shadow-lg shadow-blue-200 hover:bg-secondary transition-all">Sign Up</a>
+            </div>
+        </div>
+    </nav>
+
+    <section class="mx-auto max-w-[1400px] px-[7%] py-40">
+        <div class="text-center mb-20 animate-in fade-in duration-700">
+            <h1 class="text-4xl font-black text-primary mb-4 tracking-tighter uppercase">Features</h1>
+            <h2 class="text-6xl font-black text-gray-900 mb-8 tracking-tighter">Why choose CLG EMS?</h2>
+            <p class="text-xl text-gray-500 max-w-3xl mx-auto leading-relaxed font-medium">
+                Everything you need to manage and participate in events, all in one synchronized workspace. Engineered for performance and clarity.
+            </p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-12 max-w-5xl mx-auto">
+            <!-- Fast Booking -->
+            <div class="bg-white border-2 border-green-400 rounded-[2.5rem] p-12 shadow-xl shadow-green-900/5 hover:-translate-y-2 transition-all duration-300">
+                <div class="w-20 h-20 bg-green-50 rounded-2xl flex items-center justify-center mb-8">
+                    <i data-lucide="zap" class="w-10 h-10 text-green-600"></i>
+                </div>
+                <h3 class="text-3xl font-black text-gray-900 mb-6">Fast Booking</h3>
+                <p class="text-lg text-gray-500 leading-relaxed font-medium">
+                    Secure your spot in seconds with our optimized one-click registration process. Built for speed and reliability.
+                </p>
+            </div>
+
+            <!-- Smart Alerts -->
+            <div class="bg-white border-2 border-red-400 rounded-[2.5rem] p-12 shadow-xl shadow-red-900/5 hover:-translate-y-2 transition-all duration-300">
+                <div class="w-20 h-20 bg-red-50 rounded-2xl flex items-center justify-center mb-8">
+                    <i data-lucide="bell" class="w-10 h-10 text-red-600"></i>
+                </div>
+                <h3 class="text-3xl font-black text-gray-900 mb-6">Smart Alerts</h3>
+                <p class="text-lg text-gray-500 leading-relaxed font-medium">
+                    Never miss an event with personalized notifications tailored to your interests and academic schedule.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-primary text-white py-24">
+        <div class="mx-auto max-w-[1400px] px-[7%] text-center">
+            <p>&copy; 2026 CampusHub - College Event Management System</p>
+        </div>
+    </footer>
+
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>

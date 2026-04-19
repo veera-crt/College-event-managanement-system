@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="/js/auth-check.js"></script>
+    <script>AuthGuard.requireGuest();</script>
+    <title>Sign In - College Event Management System</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#1e3a8a',
+                        secondary: '#3b82f6',
+                        accent: '#ef4444',
+                        background: '#ffffff',
+                        foreground: '#1e293b',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        .blur-3xl { filter: blur(64px); }
+        .animate-pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 0.3; } 50% { opacity: 0.4; } }
+        @keyframes bounceSubtle { 0%, 100% { transform: translateY(-50%) translateY(0px); } 50% { transform: translateY(-50%) translateY(2.5px); } }
+        .animate-bounce-subtle { animation: bounceSubtle 1.5s ease-in-out infinite; }
+        body { font-family: 'Inter', sans-serif; color: #1e293b; }
+    </style>
+</head>
+<body class="bg-[#F8FAFC]">
+    <!-- Navbar -->
+    <nav class="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-100">
+        <div class="mx-auto flex max-w-[1400px] items-center justify-between px-[7%] py-6">
+            <div class="flex items-center gap-2">
+                <a href="index.html" class="flex items-center gap-2">
+                    <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-white font-black text-xl italic">A</div>
+                    <span class="text-xl font-black tracking-tighter text-primary">CampusHub</span>
+                </a>
+            </div>
+            <div class="flex items-center gap-4">
+                <a href="sign-up.html" class="rounded-xl border border-primary px-6 py-3 text-sm font-bold text-primary hover:bg-primary hover:text-white transition-all">Sign Up</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Background elements -->
+    <div class="fixed top-1/4 -left-20 w-96 h-96 bg-blue-100 rounded-full blur-3xl opacity-30 animate-pulse"></div>
+    <div class="fixed bottom-1/4 -right-20 w-96 h-96 bg-indigo-100 rounded-full blur-3xl opacity-30 animate-pulse delay-700"></div>
+    
+    <!-- Back Button -->
+    <div class="fixed top-32 left-12 z-50">
+        <a href="index.html" class="flex items-center gap-2 text-primary font-black text-sm uppercase tracking-widest hover:gap-4 transition-all group">
+            <i data-lucide="arrow-left" class="w-5 h-5 group-hover:-translate-x-1 transition-transform"></i>
+            Go Back
+        </a>
+    </div>
+
+    <div class="flex items-center justify-center min-h-screen py-20 px-8 relative z-10">
+        <div class="bg-white/80 backdrop-blur-xl border border-white rounded-[2.5rem] w-full max-w-4xl shadow-[0_20px_50px_rgba(0,0,0,0.08)] flex flex-col md:flex-row overflow-hidden">
+            <!-- Left Panel: Branding -->
+            <div class="md:w-5/12 bg-primary p-12 text-white flex flex-col justify-between relative overflow-hidden">
+                <div class="relative z-10">
+                    <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10 backdrop-blur-md text-white font-black text-2xl italic mb-8 border border-white/20">A</div>
+                    <h2 class="text-4xl font-black tracking-tighter mb-4 leading-tight">Your gateway to Campus Life.</h2>
+                    <p class="text-blue-100 font-medium">Join 5000+ students and organizers managing events seamlessly.</p>
+                </div>
+                
+                <div class="relative z-10 flex items-center gap-4">
+                     <div class="flex -space-x-3">
+                        <div class="h-10 w-10 rounded-full border-2 border-primary bg-blue-400"></div>
+                        <div class="h-10 w-10 rounded-full border-2 border-primary bg-indigo-400"></div>
+                        <div class="h-10 w-10 rounded-full border-2 border-primary bg-sky-400"></div>
+                     </div>
+                     <span class="text-sm font-bold opacity-80">Trusted by students</span>
+                </div>
+
+                <!-- Abstract decoration -->
+                <div class="absolute -bottom-20 -left-20 w-64 h-64 bg-blue-500 rounded-full blur-3xl opacity-50"></div>
+            </div>
+
+            <!-- Right Panel: Form -->
+            <div class="md:w-7/12 p-12 flex flex-col justify-center">
+                <div class="mb-10">
+                    <div class="inline-flex items-center gap-2 mb-4 px-4 py-1.5 bg-blue-50 text-blue-600 rounded-full text-sm font-bold tracking-tight uppercase">
+                        <i data-lucide="shield-check" class="w-4 h-4"></i> Secure Login
+                    </div>
+                    <h1 class="text-4xl font-black text-[#1e3a8a] mb-2 tracking-tighter">Welcome Back</h1>
+                    <p class="text-[#64748b] font-medium">Please enter your workspace credentials.</p>
+                </div>
+
+                <form id="signInForm" class="space-y-6">
+                    <div class="space-y-2">
+                        <label class="text-sm font-black text-[#64748b] uppercase tracking-widest px-1">Email / Username</label>
+                        <div class="relative group">
+                            <i data-lucide="mail" class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#94a3b8] group-focus-within:text-[#1e3a8a] transition-colors"></i>
+                            <input type="text" id="email" required placeholder="example@gmail.com" class="w-full pl-12 pr-4 py-4 bg-[#f1f5f9] border-2 border-transparent rounded-[1.25rem] focus:outline-none focus:border-[#1e3a8a] focus:bg-white transition-all text-[#1e293b] font-medium">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="space-y-2">
+                            <label class="text-sm font-black text-[#64748b] uppercase tracking-widest px-1">Password</label>
+                            <div class="relative group">
+                                <i data-lucide="lock" class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#94a3b8] group-focus-within:text-[#1e3a8a] transition-colors"></i>
+                                <input type="password" id="password" required placeholder="••••••••" class="w-full pl-12 pr-12 py-4 bg-[#f1f5f9] border-2 border-transparent rounded-[1.25rem] focus:outline-none focus:border-[#1e3a8a] focus:bg-white transition-all text-[#1e293b] font-medium">
+                                <button type="button" onclick="togglePasswordVisibility('password', this)" class="absolute right-4 top-1/2 -translate-y-1/2 text-[#94a3b8] hover:text-[#1e3a8a] transition-colors">
+                                    <i data-lucide="eye" class="w-5 h-5"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="space-y-2">
+                            <label class="text-sm font-black text-[#64748b] uppercase tracking-widest px-1">Role</label>
+                            <div class="relative group">
+                                <i data-lucide="user-circle" class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#94a3b8] group-focus-within:text-[#1e3a8a] transition-colors"></i>
+                                <select id="userType" class="w-full pl-12 pr-12 py-4 bg-[#f1f5f9] border-2 border-transparent rounded-[1.25rem] focus:outline-none focus:border-[#1e3a8a] focus:bg-white transition-all text-[#1e293b] font-bold appearance-none cursor-pointer">
+                                    <option value="student">Student</option>
+                                    <option value="organizer">Organizer</option>
+                                    <option value="admin">Admin</option>
+                                </select>
+                                <div class="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-primary/40 group-hover:text-primary transition-all animate-bounce-subtle">
+                                    <i data-lucide="chevron-down" class="w-4 h-4"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button type="submit" id="submitBtn" class="w-full py-5 bg-[#1e3a8a] text-white rounded-[1.5rem] font-black text-lg hover:bg-[#1e40af] transition-all shadow-xl shadow-blue-900/10 flex items-center justify-center gap-3">
+                        <span id="btnText">Access Workspace</span>
+                        <i data-lucide="arrow-right" class="w-5 h-5"></i>
+                        <div id="loader" class="hidden w-6 h-6 border-3 border-white/30 border-t-white rounded-full animate-spin"></div>
+                    </button>
+                </form>
+
+                <div class="text-center mt-10 space-y-3">
+                    <p class="text-[#64748b] font-medium text-sm">Need an account? <a href="sign-up.html" class="text-[#1e3a8a] font-black hover:underline">Join community</a></p>
+                    <p class="text-[11px] font-bold text-[#94a3b8] uppercase tracking-widest">
+                        <a href="recover.html" class="hover:text-primary transition-colors">Forgot your password? Reset here</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        lucide.createIcons();
+
+        function togglePasswordVisibility(inputId, btn) {
+            const input = document.getElementById(inputId);
+            const isPassword = input.type === 'password';
+            
+            // Toggle type
+            input.type = isPassword ? 'text' : 'password';
+            
+            // Update Icon with snappy response
+            btn.innerHTML = `<i data-lucide="${isPassword ? 'eye-off' : 'eye'}" class="w-5 h-5"></i>`;
+            lucide.createIcons();
+            
+            // Subtle tactile feedback
+            btn.style.transform = 'translateY(-50%) scale(0.9)';
+            setTimeout(() => btn.style.transform = 'translateY(-50%) scale(1)', 100);
+        }
+
+        // Already Logged-In Check
+        const userMetadata = JSON.parse(localStorage.getItem('user_metadata'));
+        if(userMetadata) {
+            const routes = { student: 'dashboard/student.html', organizer: 'dashboard/organizer.html', admin: 'dashboard/admin.html' };
+            window.location.replace(routes[userMetadata.role] || 'index.html');
+        }
+
+        const form = document.getElementById('signInForm');
+        const submitBtn = document.getElementById('submitBtn');
+        const btnText = document.getElementById('btnText');
+        const loader = document.getElementById('loader');
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const userType = document.getElementById('userType').value;
+            
+            btnText.classList.add('hidden');
+            loader.classList.remove('hidden');
+            submitBtn.disabled = true;
+
+            try {
+                // IMPORTANT: credentials: 'include' is now required to receive/set HTTP-only cookies
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ email, password, userType })
+                });
+                
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.error || "Login failed");
+                }
+                
+                // Store only NON-SENSITIVE metadata for UI (Role, Name)
+                // Tokens are now securely locked in HTTP-only Cookies
+                localStorage.setItem('user_metadata', JSON.stringify(data.user));
+                
+                // Route to correct dashboard
+                const routes = {
+                    student: "dashboard/student.html",
+                    organizer: "dashboard/organizer.html",
+                    admin: "dashboard/admin.html"
+                };
+                window.location.replace(routes[data.user.role]);
+
+            } catch (error) {
+                alert(error.message);
+                btnText.classList.remove('hidden');
+                loader.classList.add('hidden');
+                submitBtn.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>
