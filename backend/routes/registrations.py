@@ -71,6 +71,7 @@ def initiate_registration(current_user):
                 # Fetch Event details
                 cur.execute("""
                     SELECT e.title, e.reg_amount, e.club_id, e.female_mandatory, e.min_team_size, e.team_size as max_team_size,
+                           e.reg_deadline, e.end_date,
                            c.razorpay_key_id, c.razorpay_key_secret
                     FROM events e
                     LEFT JOIN clubs c ON e.club_id = c.id
@@ -78,6 +79,12 @@ def initiate_registration(current_user):
                 """, (event_id,))
                 event = cur.fetchone()
                 if not event: return jsonify({"error": "Event not found"}), 404
+
+                now = datetime.now()
+                if event['end_date'] and now > event['end_date']:
+                    return jsonify({"error": "Cannot register for a past event"}), 400
+                if event['reg_deadline'] and now > event['reg_deadline']:
+                    return jsonify({"error": "Registration deadline reached"}), 400
 
                 # 3. Team Size Validation
                 team_count = len(all_member_ids)
@@ -141,7 +148,7 @@ def initiate_registration(current_user):
                         cur.execute("""
                             INSERT INTO registrations (event_id, student_id, status, team_name, leader_id, payer_id)
                             VALUES (%s, %s, 'approved', %s, %s, %s) RETURNING id
-                        """, (event_id, uid, 'approved', team_name, target_leader_id, student_id))
+                        """, (event_id, uid, team_name, target_leader_id, student_id))
                         if uid == target_leader_id:
                             new_reg_id = cur.fetchone()['id']
                         else:

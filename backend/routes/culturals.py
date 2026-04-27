@@ -94,16 +94,19 @@ def book_ticket(current_user):
                     return jsonify({"error": "You have already booked a ticket for this cultural event."}), 400
                 
                 # 2. Check availability
-                cur.execute("SELECT c.*, cl.razorpay_key_id, cl.razorpay_key_secret FROM culturals c JOIN clubs cl ON c.club_id = cl.id WHERE c.id = %s", (cultural_id,))
+                cur.execute("SELECT c.*, cl.name as club_name, cl.razorpay_key_id, cl.razorpay_key_secret FROM culturals c JOIN clubs cl ON c.club_id = cl.id WHERE c.id = %s", (cultural_id,))
                 cult = cur.fetchone()
                 if not cult: return jsonify({"error": "Cultural unit not found"}), 404
                 
                 # 3. Check Deadline
-                if cult['booking_deadline'] and datetime.now() > cult['booking_deadline']:
+                now = datetime.now()
+                if cult['event_date'] and now > cult['event_date']:
+                    return jsonify({"error": "Cannot book a ticket for a past event."}), 400
+                if cult['booking_deadline'] and now > cult['booking_deadline']:
                     return jsonify({"error": "Registration for this event has closed."}), 400
 
                 if cult['available_tickets'] <= 0:
-                    return jsonify({"error": "Sorry, tickets for this event are sold out."}), 400
+                    return jsonify({"error": "Event Full!"}), 400
                 
                 price = float(cult['price'])
                 
