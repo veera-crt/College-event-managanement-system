@@ -2,9 +2,17 @@ from flask import Blueprint, request, jsonify
 from utils.auth_utils import require_auth
 from db import DatabaseConnection
 from psycopg2.extras import RealDictCursor
-from datetime import datetime
+from datetime import datetime, timedelta
 
 attendance_bp = Blueprint('attendance', __name__)
+
+def validate_attendance_window(event):
+    now = datetime.now()
+    if now < event['start_date']:
+        return "Attendance can only be managed after the event has started."
+    if now > event['end_date'] + timedelta(hours=24):
+        return "Attendance management window has closed. It is only available for 24 hours after the event ends."
+    return None
 
 @attendance_bp.route('/mark', methods=['POST'])
 @require_auth(roles=['organizer'])
@@ -20,10 +28,14 @@ def mark_attendance(current_user):
         with DatabaseConnection() as conn:
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
                 # 1. Verify organizer ownership and LACK OF LOCK
-                cur.execute("SELECT id, attendance_locked FROM events WHERE id = %s AND organizer_id = %s", (event_id, int(current_user['sub'])))
+                cur.execute("SELECT id, attendance_locked, start_date, end_date FROM events WHERE id = %s AND organizer_id = %s", (event_id, int(current_user['sub'])))
                 event = cur.fetchone()
                 if not event:
                      return jsonify({"error": "Unauthorized"}), 403
+                
+                window_error = validate_attendance_window(event)
+                if window_error:
+                    return jsonify({"error": window_error}), 403
                 
                 if event['attendance_locked']:
                     return jsonify({"error": "Registry Locked: This event's attendance is closed for changes."}), 403
@@ -51,10 +63,14 @@ def unmark_attendance(current_user):
     try:
         with DatabaseConnection() as conn:
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
-                cur.execute("SELECT id, attendance_locked FROM events WHERE id = %s AND organizer_id = %s", (event_id, int(current_user['sub'])))
+                cur.execute("SELECT id, attendance_locked, start_date, end_date FROM events WHERE id = %s AND organizer_id = %s", (event_id, int(current_user['sub'])))
                 event = cur.fetchone()
                 if not event:
                      return jsonify({"error": "Unauthorized"}), 403
+                
+                window_error = validate_attendance_window(event)
+                if window_error:
+                    return jsonify({"error": window_error}), 403
                 
                 if event['attendance_locked']:
                     return jsonify({"error": "Registry Locked: Cannot clear attendance."}), 403
@@ -77,10 +93,14 @@ def toggle_attendance_lock(current_user):
     try:
         with DatabaseConnection() as conn:
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
-                cur.execute("SELECT id, attendance_locked FROM events WHERE id = %s AND organizer_id = %s", (event_id, int(current_user['sub'])))
+                cur.execute("SELECT id, attendance_locked, start_date, end_date FROM events WHERE id = %s AND organizer_id = %s", (event_id, int(current_user['sub'])))
                 event = cur.fetchone()
                 if not event:
                     return jsonify({"error": "Unauthorized"}), 403
+                
+                window_error = validate_attendance_window(event)
+                if window_error:
+                    return jsonify({"error": window_error}), 403
                 
                 new_state = not event['attendance_locked']
                 cur.execute("UPDATE events SET attendance_locked = %s WHERE id = %s", (new_state, event_id))
@@ -110,10 +130,14 @@ def generate_event_otps(current_user):
         with DatabaseConnection() as conn:
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
                 # Verify ownership and lock
-                cur.execute("SELECT id, attendance_locked FROM events WHERE id = %s AND organizer_id = %s", (event_id, int(current_user['sub'])))
+                cur.execute("SELECT id, attendance_locked, start_date, end_date FROM events WHERE id = %s AND organizer_id = %s", (event_id, int(current_user['sub'])))
                 event = cur.fetchone()
                 if not event:
                     return jsonify({"error": "Unauthorized"}), 403
+                
+                window_error = validate_attendance_window(event)
+                if window_error:
+                    return jsonify({"error": window_error}), 403
                 
                 if event['attendance_locked']:
                     return jsonify({"error": "Registry Locked: Cannot regenerate OTPs."}), 403
