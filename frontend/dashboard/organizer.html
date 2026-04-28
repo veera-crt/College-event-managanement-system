@@ -1165,7 +1165,12 @@
                 });
                 
                 if(!res.ok) {
-                    Swal.fire('Error', 'Failed to synchronize with server.', 'error');
+                    let errorMessage = 'Failed to synchronize with server.';
+                    try {
+                        const data = await res.json();
+                        if (data.error) errorMessage = data.error;
+                    } catch(err) {}
+                    Swal.fire('Error', errorMessage, 'error');
                     loadAttendanceList(selectedAttendanceEventId);
                 } else {
                     const p = activeParticipantsData.find(u => u.student_id === studentId);
