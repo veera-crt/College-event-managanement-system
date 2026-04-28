@@ -40,7 +40,13 @@ const AuthGuard = {
             }
         }
         if (response.status === 403) {
-            this.notifySessionExpired();
+            try {
+                const data = await response.clone().json();
+                // Only kick out if it's a strict security/auth violation
+                if (data.error && (data.error.includes("Session terminated") || data.error.includes("Security violation"))) {
+                    this.notifySessionExpired();
+                }
+            } catch (e) {}
         }
         return response;
     },
