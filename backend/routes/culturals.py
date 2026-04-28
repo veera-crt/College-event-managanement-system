@@ -5,7 +5,7 @@ from psycopg2.extras import RealDictCursor
 import razorpay
 from utils.crypto_utils import decrypt_data
 from utils.invoice_generator import generate_and_send_invoice, generate_and_send_cultural_ticket
-from datetime import datetime
+from datetime import datetime, timedelta
 
 culturals_bp = Blueprint('culturals', __name__)
 
@@ -151,12 +151,12 @@ def book_ticket(current_user):
                     # Generate Both: Ticket and Invoice
                     ticket_path = generate_and_send_cultural_ticket(
                         u['full_name'], [u['email'], u['college_email']], cult['title'], cult['club_name'], 0, f"CULT-{recorded_booking_id}", 
-                        datetime.now().strftime("%Y-%m-%d %H:%M"), u['reg_no'], cult['venue'], cult.get('template_id', 'classic_purple'),
+                        (datetime.utcnow() + timedelta(hours=5, minutes=30)).strftime("%Y-%m-%d %H:%M"), u['reg_no'], cult['venue'], cult.get('template_id', 'classic_purple'),
                         send_email=False 
                     )
                     invoice_path = generate_and_send_invoice(
                         u['full_name'], [u['email'], u['college_email']], cult['title'], cult['club_name'], 0, "FREE_CULT", 
-                        datetime.now().strftime("%Y-%m-%d %H:%M"), u['reg_no'], send_email=False
+                        (datetime.utcnow() + timedelta(hours=5, minutes=30)).strftime("%Y-%m-%d %H:%M"), u['reg_no'], send_email=False
                     )
 
                     # Send Unified Email
@@ -238,12 +238,12 @@ def verify_booking(current_user):
                 
                 ticket_path = generate_and_send_cultural_ticket(
                     booking['full_name'], [booking['email'], booking['college_email']], booking['title'], booking['club_name'], 
-                    booking['amount_paid'], ticket_str, datetime.now().strftime("%Y-%m-%d %H:%M"), booking['reg_no'], booking['venue'], booking.get('template_id', 'classic_purple'),
+                    booking['amount_paid'], ticket_str, (datetime.utcnow() + timedelta(hours=5, minutes=30)).strftime("%Y-%m-%d %H:%M"), booking['reg_no'], booking['venue'], booking.get('template_id', 'classic_purple'),
                     send_email=False
                 )
                 invoice_path = generate_and_send_invoice(
                     booking['full_name'], [booking['email'], booking['college_email']], booking['title'], booking['club_name'], 
-                    booking['amount_paid'], razorpay_payment_id, datetime.now().strftime("%Y-%m-%d %H:%M"), booking['reg_no'], send_email=False
+                    booking['amount_paid'], razorpay_payment_id, (datetime.utcnow() + timedelta(hours=5, minutes=30)).strftime("%Y-%m-%d %H:%M"), booking['reg_no'], send_email=False
                 )
 
                 from utils.invoice_generator import send_combined_email

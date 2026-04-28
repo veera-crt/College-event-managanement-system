@@ -1,5 +1,5 @@
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 from flask import Blueprint, request, jsonify
 import razorpay
 from utils.auth_utils import require_auth
@@ -176,7 +176,7 @@ def initiate_registration(current_user):
                             if not new_reg_id: new_reg_id = inserted_id
 
                     # 2. Add all members to registration_members
-                    pay_datetime = datetime.now().isoformat()
+                    pay_datetime = (datetime.utcnow() + timedelta(hours=5, minutes=30)).isoformat()
                     for uid in all_member_ids:
                         cur.execute("INSERT INTO registration_members (registration_id, student_id) VALUES (%s, %s)", (new_reg_id, uid))
                         
@@ -280,7 +280,7 @@ def verify_payment(current_user):
                     return jsonify({"error": "Payment verification failed"}), 400
 
                 # Mark as approved
-                pay_datetime = datetime.now().isoformat()
+                pay_datetime = (datetime.utcnow() + timedelta(hours=5, minutes=30)).isoformat()
                 cur.execute("""
                     UPDATE registrations 
                     SET status = 'approved', razorpay_payment_id = %s, razorpay_signature = %s

@@ -7,7 +7,8 @@ from datetime import datetime, timedelta
 attendance_bp = Blueprint('attendance', __name__)
 
 def validate_attendance_window(event):
-    now = datetime.now()
+    ist_offset = timedelta(hours=5, minutes=30)
+    now = datetime.utcnow() + ist_offset
     if now < event['start_date']:
         return "Attendance can only be managed after the event has started."
     if now > event['end_date'] + timedelta(hours=24):
