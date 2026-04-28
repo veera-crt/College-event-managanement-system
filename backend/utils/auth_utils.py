@@ -44,7 +44,7 @@ def create_tokens(user, max_expiry=None):
         'fp': fp, # Fingerprint binding
         'jti': jti,
         'type': 'access',
-        'exp': datetime.utcnow() + timedelta(minutes=20),
+        'exp': datetime.utcnow() + timedelta(hours=2),
         'iat': datetime.utcnow()
     }
     access_token = jwt.encode(access_payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
@@ -53,7 +53,7 @@ def create_tokens(user, max_expiry=None):
     refresh_jti = str(uuid.uuid4())
     
     # Enforce hard limit from initial login if provided
-    refresh_expiry = max_expiry if max_expiry else (datetime.utcnow() + timedelta(minutes=20))
+    refresh_expiry = max_expiry if max_expiry else (datetime.utcnow() + timedelta(hours=2))
     
     refresh_payload = {
         'sub': str(user['id']),

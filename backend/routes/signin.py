@@ -51,7 +51,7 @@ def login():
                     if not cur.fetchone():
                          return jsonify({"error": f"Access Denied: The Administrator for '{user['organization_name']}' is not active. Please contact your club head."}), 403
 
-                # 5. Issue JWT and Refresh tokens (20 minute max session)
+                # 5. Issue JWT and Refresh tokens (2 hour max session)
                 access_token, refresh_token = create_tokens({
                     "id": user['id'],
                     "email": user['email'],
@@ -69,7 +69,7 @@ def login():
                 # ----------------------------
 
                 resp = make_response(jsonify({
-                    "message": "Login successful (Session limited to 20 minutes)",
+                    "message": "Login successful (Session limited to 2 hours)",
                     "user": {
                         "id": user['id'],
                         "fullName": user['full_name'],
@@ -79,9 +79,9 @@ def login():
                     }
                 }))
                 
-                # Set Secure HTTP-only Cookies with 20 minute limit (1200 seconds)
-                resp.set_cookie('access_token', access_token, httponly=True, samesite='Strict', max_age=1200)
-                resp.set_cookie('refresh_token', refresh_token, httponly=True, samesite='Strict', max_age=1200)
+                # Set Secure HTTP-only Cookies with 2 hour limit (7200 seconds)
+                resp.set_cookie('access_token', access_token, httponly=True, samesite='Strict', max_age=7200)
+                resp.set_cookie('refresh_token', refresh_token, httponly=True, samesite='Strict', max_age=7200)
                 
                 return resp, 200
 
@@ -131,14 +131,14 @@ def refresh():
                 # ----------------------------
                 conn.commit()
                 
-                # 5. Issue new pairs while PRESERVING original expiry for hard 20m limit
+                # 5. Issue new pairs while PRESERVING original expiry for hard 2h limit
                 # data['exp'] is the current refresh token's expiration
                 orig_expiry = datetime.fromtimestamp(data['exp'])
                 new_access, new_refresh = create_tokens(user, max_expiry=orig_expiry)
                 
                 resp = make_response(jsonify({"message": "Session renewed"}))
-                resp.set_cookie('access_token', new_access, httponly=True, samesite='Strict', max_age=1200)
-                resp.set_cookie('refresh_token', new_refresh, httponly=True, samesite='Strict', max_age=1200)
+                resp.set_cookie('access_token', new_access, httponly=True, samesite='Strict', max_age=7200)
+                resp.set_cookie('refresh_token', new_refresh, httponly=True, samesite='Strict', max_age=7200)
                 return resp, 200
                 
     except jwt.ExpiredSignatureError:
