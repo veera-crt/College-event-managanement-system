@@ -31,6 +31,29 @@ def get_culturals(current_user):
 @require_auth(roles=['organizer', 'admin'])
 def create_cultural(current_user):
     data = request.json
+    
+    event_date_str = data.get('event_date')
+    booking_deadline_str = data.get('booking_deadline')
+    
+    if event_date_str and booking_deadline_str:
+        try:
+            # Clean string for naive parsing (remove ms, Z, or timezone offsets)
+            e_str = event_date_str.split('.')[0].replace('Z', '').split('+')[0]
+            b_str = booking_deadline_str.split('.')[0].replace('Z', '').split('+')[0]
+            
+            event_date = datetime.fromisoformat(e_str)
+            booking_deadline = datetime.fromisoformat(b_str)
+            now = datetime.now()
+            
+            if event_date < now:
+                return jsonify({"error": "Event date cannot be in the past"}), 400
+            if booking_deadline < now:
+                return jsonify({"error": "Booking deadline cannot be in the past"}), 400
+            if booking_deadline >= event_date:
+                return jsonify({"error": "Booking deadline must be strictly before the event date"}), 400
+        except ValueError:
+            return jsonify({"error": "Invalid date format"}), 400
+
     try:
         with DatabaseConnection() as conn:
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
