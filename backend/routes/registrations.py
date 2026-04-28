@@ -71,10 +71,12 @@ def initiate_registration(current_user):
                 # Fetch Event details
                 cur.execute("""
                     SELECT e.title, e.reg_amount, e.club_id, e.female_mandatory, e.min_team_size, e.team_size as max_team_size,
-                           e.reg_deadline, e.end_date,
-                           c.razorpay_key_id, c.razorpay_key_secret
+                           e.reg_deadline, e.end_date, e.hall_id,
+                           c.razorpay_key_id, c.razorpay_key_secret,
+                           h.capacity as hall_capacity
                     FROM events e
                     LEFT JOIN clubs c ON e.club_id = c.id
+                    LEFT JOIN halls h ON e.hall_id = h.id
                     WHERE e.id = %s
                 """, (event_id,))
                 event = cur.fetchone()
@@ -92,6 +94,23 @@ def initiate_registration(current_user):
                     return jsonify({"error": f"Minimum {event['min_team_size']} members required"}), 400
                 if team_count > (event['max_team_size'] or 1):
                     return jsonify({"error": f"Maximum {event['max_team_size']} members allowed"}), 400
+
+                # 4. Hall Capacity Validation
+                if event['hall_capacity']:
+                    cur.execute("""
+                        SELECT COUNT(rm.student_id) as current_count
+                        FROM registration_members rm
+                        JOIN registrations r ON rm.registration_id = r.id
+                        WHERE r.event_id = %s AND r.status IN ('approved', 'pending')
+                    """, (event_id,))
+                    current_count = cur.fetchone()['current_count']
+                    
+                    spots_left = event['hall_capacity'] - current_count
+                    if spots_left <= 0:
+                        return jsonify({"error": "Event full error. The hall capacity has been reached."}), 400
+                        
+                    if team_count > spots_left:
+                        return jsonify({"error": f"Only {spots_left} persons allowed to register. Cannot register a team of {team_count}."}), 400
 
                 # 4. Gender Validation & Friend Verification
                 cur.execute("SELECT id, gender, full_name FROM users WHERE id = ANY(%s)", (all_member_ids,))
@@ -377,9 +396,11 @@ def edit_team(current_user):
                 # 1. Fetch current registration & event time
                 cur.execute("""
                     SELECT r.id, r.student_id, r.leader_id, r.payer_id, r.event_id, r.team_name, r.amount_paid, r.edit_count, 
-                           e.start_date, e.min_team_size, e.team_size as max_team_size
+                           e.start_date, e.min_team_size, e.team_size as max_team_size,
+                           h.capacity as hall_capacity
                     FROM registrations r
                     JOIN events e ON r.event_id = e.id
+                    LEFT JOIN halls h ON e.hall_id = h.id
                     WHERE r.id = %s
                 """, (reg_id,))
                 reg = cur.fetchone()
@@ -417,7 +438,24 @@ def edit_team(current_user):
                 to_add = [uid for uid in all_ids if uid not in current_members]
                 to_remove = [uid for uid in current_members if uid not in all_ids]
 
-                # 4. PERFORM DATABASE UPDATES
+                # 4. Hall Capacity Validation (if adding members)
+                if reg['hall_capacity'] and to_add:
+                    cur.execute("""
+                        SELECT COUNT(rm.student_id) as current_count
+                        FROM registration_members rm
+                        JOIN registrations r ON rm.registration_id = r.id
+                        WHERE r.event_id = %s AND r.status IN ('approved', 'pending')
+                    """, (reg['event_id'],))
+                    current_count = cur.fetchone()['current_count']
+                    
+                    spots_left = reg['hall_capacity'] - current_count
+                    if spots_left <= 0:
+                        return jsonify({"error": "Event full error. The hall capacity has been reached."}), 400
+                        
+                    if len(to_add) > spots_left:
+                        return jsonify({"error": f"Only {spots_left} persons allowed to be added. Cannot add {len(to_add)} members."}), 400
+
+                # 5. PERFORM DATABASE UPDATES
                 # Remove rows for dropped members
                 if to_remove:
                     cur.execute("DELETE FROM registrations WHERE event_id = %s AND leader_id = %s AND student_id = ANY(%s)", 

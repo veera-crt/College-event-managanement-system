@@ -8,7 +8,7 @@ backend_dir = os.path.abspath(os.path.join(current_dir, '..', 'backend'))
 sys.path.append(backend_dir)
 
 # Now import the Flask app
-from app import app
+from backend.app import app
 
 # Vercel needs the 'app' object
 # The Flask app 'app' will be used to handle requests
