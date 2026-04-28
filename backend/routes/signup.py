@@ -34,6 +34,13 @@ def send_otp():
                 if cur.fetchone():
                     return jsonify({"error": "This email address is already registered with another account"}), 409
 
+                # Check if registration number is already registered
+                reg_no = data.get('regNo')
+                if reg_no:
+                    cur.execute("SELECT id FROM users WHERE reg_no = %s", (reg_no,))
+                    if cur.fetchone():
+                        return jsonify({"error": "User already exists with this registration number"}), 409
+
                 # 2. Role-Based Club Constraints
                 if role == 'admin' and org_name:
                     # Constraint: Only one admin per club

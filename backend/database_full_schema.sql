@@ -54,7 +54,8 @@ CREATE TABLE IF NOT EXISTS users (
     organization_name TEXT,
     club_id INTEGER REFERENCES clubs(id) ON DELETE SET NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(email, role)
+    UNIQUE(email),
+    UNIQUE(reg_no)
 );
 
 CREATE TABLE IF NOT EXISTS friends (
