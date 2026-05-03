@@ -670,7 +670,7 @@
                     if (r.type === 'cultural') {
                         return `
                         <div class="bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden transition-all hover:shadow-md">
-                            <div class="p-6 flex items-center justify-between">
+                            <div onclick="toggleCulturalDetails(${r.id})" class="p-6 flex items-center justify-between cursor-pointer group">
                                 <div class="flex items-center gap-5">
                                     <div class="h-14 w-14 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center shadow-inner">
                                         <i data-lucide="ticket" class="w-6 h-6"></i>
@@ -682,9 +682,7 @@
                                 </div>
                                 <div class="flex items-center gap-3">
                                     <span class="px-3 py-1 bg-green-50 text-green-600 rounded-lg text-[9px] font-black uppercase tracking-tighter border border-green-100 italic">Confirmed</span>
-                                    <button onclick="toggleCulturalDetails(${r.id})" class="h-10 w-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 hover:bg-primary hover:text-white transition-all">
-                                        <i data-lucide="chevron-down" id="icon-cult-${r.id}" class="w-5 h-5 transition-transform duration-300"></i>
-                                    </button>
+                                    <i data-lucide="chevron-down" id="icon-cult-${r.id}" class="w-5 h-5 text-slate-300 transition-all duration-300"></i>
                                 </div>
                             </div>
                             <!-- Expandable Details -->
