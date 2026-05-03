@@ -668,12 +668,17 @@
 
                 list.innerHTML = combined.map(r => {
                     if (r.type === 'cultural') {
+                        const isPending = r.status === 'pending';
+                        const isCancelled = r.status === 'cancelled';
+                        const statusLabel = isPending ? "Processing..." : isCancelled ? "Cancelled" : "Confirmed";
+                        const statusClass = isPending ? "bg-blue-50 text-blue-600 border-blue-100 animate-pulse" : isCancelled ? "bg-red-50 text-red-600 border-red-100" : "bg-emerald-50 text-emerald-600 border-emerald-100";
+
                         return `
                         <div class="bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden transition-all hover:shadow-md">
                             <div onclick="toggleCulturalDetails(${r.id})" class="p-6 flex items-center justify-between cursor-pointer group">
                                 <div class="flex items-center gap-5">
-                                    <div class="h-14 w-14 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center shadow-inner">
-                                        <i data-lucide="ticket" class="w-6 h-6"></i>
+                                    <div class="h-14 w-14 rounded-2xl ${isCancelled ? 'bg-red-50 text-red-600' : 'bg-purple-50 text-purple-600'} flex items-center justify-center shadow-inner">
+                                        <i data-lucide="${isCancelled ? 'x-circle' : 'ticket'}" class="w-6 h-6"></i>
                                     </div>
                                     <div>
                                         <h4 class="font-black text-slate-900 tracking-tight">Admission Ticket: ${r.title}</h4>
@@ -681,7 +686,7 @@
                                     </div>
                                 </div>
                                 <div class="flex items-center gap-3">
-                                    <span class="px-3 py-1 bg-green-50 text-green-600 rounded-lg text-[9px] font-black uppercase tracking-tighter border border-green-100 italic">Confirmed</span>
+                                    <span class="px-3 py-1 ${statusClass} rounded-lg text-[9px] font-black uppercase tracking-tighter border italic">${statusLabel}</span>
                                     <i data-lucide="chevron-down" id="icon-cult-${r.id}" class="w-5 h-5 text-slate-300 transition-all duration-300"></i>
                                 </div>
                             </div>
@@ -700,12 +705,35 @@
                                         <p class="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Gate Entry</p>
                                         <p class="text-[10px] font-black text-emerald-600 font-bold italic italic">Admission Secured</p>
                                     </div>
-                                    <div class="flex justify-end items-center">
-                                       <div id="qr-container-${r.id}" class="h-16 w-16 bg-white rounded-lg border border-slate-100 flex items-center justify-center p-1">
-                                           <!-- QR Code injected here -->
-                                           <div class="opacity-20"><i data-lucide="qr-code" class="w-8 h-8"></i></div>
-                                       </div>
-                                    </div>
+                                    ${!isCancelled && !isPending ? `
+                                        <div class="flex justify-end items-center">
+                                           <div id="qr-container-${r.id}" class="h-16 w-16 bg-white rounded-lg border border-slate-100 flex items-center justify-center p-1">
+                                               <!-- QR Code injected here -->
+                                               <div class="opacity-20"><i data-lucide="qr-code" class="w-8 h-8"></i></div>
+                                           </div>
+                                        </div>
+                                    ` : ''}
+                                    
+                                    ${isPending ? `
+                                        <div class="col-span-2 md:col-span-4 mt-4 pt-4 border-t border-slate-100">
+                                            <div class="flex flex-col items-center gap-4">
+                                                <div class="text-center">
+                                                    <p class="text-[9px] font-black text-red-500 uppercase tracking-widest mb-1">Final Payment Window</p>
+                                                    <div class="countdown-timer text-2xl font-black text-red-600 tabular-nums" data-initiated="${r.payment_initiated_at}">--:--</div>
+                                                </div>
+                                                <button onclick="bookTicket(${r.cultural_id}, ${r.amount_paid})" class="w-full max-w-xs py-3 bg-red-600 text-white rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-black transition-all shadow-lg">Retry Payment Now</button>
+                                                <p class="text-[8px] text-slate-400 italic text-center">Unpaid tickets auto-cancel after 5 mins.</p>
+                                            </div>
+                                        </div>
+                                    ` : ''}
+
+                                    ${isCancelled ? `
+                                        <div class="col-span-2 md:col-span-4 mt-4 p-4 bg-red-50 border border-red-100 rounded-2xl text-center">
+                                            <p class="text-[10px] font-black text-red-600 uppercase tracking-widest">Transaction Failed / Expired</p>
+                                            <p class="text-[8px] text-red-400 italic mt-1">Please try booking again if tickets are available.</p>
+                                        </div>
+                                    ` : ''}
+
                                     <!-- Hidden data for QR -->
                                     <input type="hidden" id="qr-data-${r.id}" value="ADMISSION ID: ${r.id}\nEVENT: ${r.title}\nSTUDENT: ${myProfile ? myProfile.full_name : 'N/A'}\nREG NO: ${myProfile ? myProfile.reg_no : 'N/A'}">
                                 </div>
@@ -722,6 +750,7 @@
                     let statusClass = 'bg-blue-50 text-blue-600 border-blue-100';
                     if (r.status === 'approved') { statusLabel = "Confirmed"; statusClass = "bg-emerald-50 text-emerald-600 border-emerald-100"; }
                     else if (r.status === 'ready_to_pay') { statusLabel = "Payment Pending"; statusClass = "bg-amber-50 text-amber-600 border-amber-100"; }
+                    else if (r.status === 'pending') { statusLabel = "Processing..."; statusClass = "bg-blue-50 text-blue-600 border-blue-100 animate-pulse"; }
                     else if (r.status === 'waiting_friends') { statusLabel = "Recruiting Squad"; statusClass = "bg-indigo-50 text-indigo-600 border-indigo-100"; }
                     else if (r.status === 'cancelled') { 
                         statusLabel = r.is_leader ? "Invite Declined" : "Mission Aborted"; 
@@ -2130,6 +2159,24 @@
 
         function updateCountdowns() {
             document.querySelectorAll('.countdown-timer').forEach(el => {
+                const initiatedStr = el.dataset.initiated;
+                if (initiatedStr) {
+                    const initiated = new Date(initiatedStr);
+                    const expiry = new Date(initiated.getTime() + 5 * 60 * 1000);
+                    const now = new Date();
+                    const diff = expiry - now;
+                    
+                    if (diff <= 0) {
+                        el.innerText = "EXPIRED";
+                        el.classList.add('text-red-500');
+                        return;
+                    }
+                    const mins = Math.floor(diff / 60000);
+                    const secs = Math.floor((diff % 60000) / 1000);
+                    el.innerText = `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+                    return;
+                }
+
                 const targetStr = el.dataset.expiry || el.dataset.target;
                 if (!targetStr) return;
                 

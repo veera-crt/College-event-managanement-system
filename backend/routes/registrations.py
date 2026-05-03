@@ -498,7 +498,7 @@ def generate_payment(current_user):
 
                 client = razorpay.Client(auth=(decrypt_data(reg['razorpay_key_id']), decrypt_data(reg['razorpay_key_secret'])))
                 order = client.order.create(dict(amount=int(float(reg['amount_paid']) * 100), currency='INR', receipt=f"team_{reg['event_id']}_{student_id}"))
-                cur.execute("UPDATE registrations SET razorpay_order_id = %s, status = 'pending' WHERE id = %s", (order['id'], reg_id))
+                cur.execute("UPDATE registrations SET razorpay_order_id = %s, status = 'pending', payment_initiated_at = CURRENT_TIMESTAMP WHERE id = %s", (order['id'], reg_id))
                 conn.commit()
                 return jsonify({"order_id": order['id'], "amount": float(reg['amount_paid']), "key": decrypt_data(reg['razorpay_key_id'])}), 200
     except Exception as e: return jsonify({"error": str(e)}), 500
@@ -510,9 +510,19 @@ def get_my_registrations(current_user):
         with DatabaseConnection() as conn:
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
                 uid = int(current_user['sub'])
+                
+                # Cleanup: Automatically cancel pending registrations that are > 5 minutes old
+                cur.execute("""
+                    UPDATE registrations 
+                    SET status = 'cancelled' 
+                    WHERE status = 'pending' 
+                      AND payment_initiated_at < CURRENT_TIMESTAMP - INTERVAL '5 minutes'
+                """)
+                conn.commit()
+
                 cur.execute("""
                     SELECT DISTINCT r.id as reg_id, r.event_id, r.status, r.amount_paid, r.registered_at, r.team_name, r.razorpay_payment_id, r.edit_count,
-                           r.leader_id, r.payer_id, rm_me.invite_status, rm_me.invite_expires_at,
+                           r.leader_id, r.payer_id, rm_me.invite_status, rm_me.invite_expires_at, r.payment_initiated_at,
                            e.title, e.start_date, e.end_date, e.min_team_size, e.team_size as max_team_size,
                            h.name as hall_name, c.name as club_name,
                            COALESCE(att.manual_present, FALSE) as manual_present,
@@ -532,6 +542,7 @@ def get_my_registrations(current_user):
                 for r in regs:
                     r['is_leader'] = (int(r['leader_id']) == uid)
                     if r['invite_expires_at']: r['invite_expires_at'] = r['invite_expires_at'].isoformat()
+                    if r['payment_initiated_at']: r['payment_initiated_at'] = r['payment_initiated_at'].isoformat()
                     if r['start_date']: r['start_date'] = r['start_date'].isoformat()
                     if r['end_date']: r['end_date'] = r['end_date'].isoformat()
                     if r['registered_at']: r['registered_at'] = r['registered_at'].isoformat()

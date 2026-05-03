@@ -178,8 +178,8 @@ def book_ticket(current_user):
                     order = client.order.create(dict(amount=int(price * 100), currency='INR', receipt=f"cult_{cultural_id}_{student_id}"))
                     
                     cur.execute("""
-                        INSERT INTO cultural_bookings (cultural_id, student_id, status, razorpay_order_id, amount_paid)
-                        VALUES (%s, %s, 'pending', %s, %s)
+                        INSERT INTO cultural_bookings (cultural_id, student_id, status, razorpay_order_id, amount_paid, payment_initiated_at)
+                        VALUES (%s, %s, 'pending', %s, %s, CURRENT_TIMESTAMP)
                     """, (cultural_id, student_id, order['id'], price))
                     conn.commit()
                     return jsonify({
@@ -311,8 +311,17 @@ def get_my_cultural_bookings(current_user):
     try:
         with DatabaseConnection() as conn:
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                # Cleanup: Automatically cancel pending cultural bookings that are > 5 minutes old
                 cur.execute("""
-                    SELECT cb.id, cb.status, cb.booked_at, cb.amount_paid, cb.razorpay_payment_id,
+                    UPDATE cultural_bookings 
+                    SET status = 'cancelled' 
+                    WHERE status = 'pending' 
+                      AND payment_initiated_at < CURRENT_TIMESTAMP - INTERVAL '5 minutes'
+                """)
+                conn.commit()
+                
+                cur.execute("""
+                    SELECT cb.id, cb.status, cb.booked_at, cb.amount_paid, cb.razorpay_payment_id, cb.payment_initiated_at,
                            c.title as cultural_title, c.venue, c.event_date
                     FROM cultural_bookings cb
                     JOIN culturals c ON cb.cultural_id = c.id
