@@ -487,9 +487,10 @@ def generate_payment(current_user):
         with DatabaseConnection() as conn:
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
                 cur.execute("""
-                    SELECT r.*, e.razorpay_key_id, e.razorpay_key_secret 
+                    SELECT r.*, c.razorpay_key_id, c.razorpay_key_secret 
                     FROM registrations r 
                     JOIN events e ON r.event_id = e.id 
+                    JOIN clubs c ON e.club_id = c.id
                     WHERE r.id = %s AND r.payer_id = %s AND r.status = 'ready_to_pay'
                 """, (reg_id, student_id))
                 reg = cur.fetchone()
