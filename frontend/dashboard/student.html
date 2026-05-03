@@ -860,9 +860,14 @@
                                             </div>
                                         </div>
                                     ` : `
-                                        ${new Date(r.start_date) <= new Date() ? `
+                                        ${new Date(r.end_date) < new Date() ? `
                                             <span class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3">Status</span>
-                                            <div class="flex gap-3 font-black text-emerald-500 text-2xl tracking-tighter">
+                                            <div class="flex gap-3 font-black text-emerald-500 text-2xl tracking-tighter italic">
+                                                Mission Accomplished
+                                            </div>
+                                        ` : new Date(r.start_date) <= new Date() ? `
+                                            <span class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3">Status</span>
+                                            <div class="flex gap-3 font-black text-blue-500 text-2xl tracking-tighter">
                                                 In Progress
                                             </div>
                                         ` : `
@@ -2072,19 +2077,28 @@
                 const diff = target - now;
 
                 if (diff <= 0) {
-                    el.innerText = el.dataset.expiry ? "EXPIRED" : "IN PROGRESS";
+                    el.innerText = el.dataset.expiry ? "EXPIRED" : "MISSION STARTED";
                     el.classList.add('text-red-500');
                     return;
                 }
 
-                const hrs = Math.floor(diff / 3600000);
-                const mins = Math.floor((diff % 3600000) / 60000);
-                const secs = Math.floor((diff % 60000) / 1000);
-
+                // If it's an invitation expiry (data-expiry), show min:sec
                 if (el.dataset.expiry) {
+                    const mins = Math.floor((diff % 3600000) / 60000);
+                    const secs = Math.floor((diff % 60000) / 1000);
                     el.innerText = `${mins}:${secs < 10 ? '0' : ''}${secs}`;
                 } else {
-                    el.innerText = `${hrs} Hr : ${mins} Min : ${secs} Sec`;
+                    // If it's an event start (data-target), show Day, Hr, Min, Sec
+                    const days = Math.floor(diff / 86400000);
+                    const hrs = Math.floor((diff % 86400000) / 3600000);
+                    const mins = Math.floor((diff % 3600000) / 60000);
+                    const secs = Math.floor((diff % 60000) / 1000);
+
+                    if (days > 0) {
+                        el.innerText = `${days}d ${hrs}h : ${mins}m`;
+                    } else {
+                        el.innerText = `${hrs} Hr : ${mins} Min : ${secs} Sec`;
+                    }
                 }
             });
         }
