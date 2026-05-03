@@ -8,6 +8,7 @@ from psycopg2.extras import RealDictCursor
 from utils.invoice_generator import generate_and_send_invoice
 from utils.gsheets_bot import append_to_sheet
 from utils.crypto_utils import decrypt_data
+from utils.reminder_system import get_gcal_link, send_reminder_email
 
 def check_event_clashes(cur, student_ids, new_start, new_end, current_reg_id=None):
     """
@@ -47,7 +48,7 @@ def check_event_clashes(cur, student_ids, new_start, new_end, current_reg_id=Non
 
 def finalize_free_registration(cur, reg_id, event_id, team_name, student_ids):
     cur.execute("""
-        SELECT e.title, e.start_date, c.name as club_name, c.master_gsheet_link
+        SELECT e.title, e.start_date, e.end_date, e.hall_id, c.name as club_name, c.master_gsheet_link
         FROM events e
         LEFT JOIN clubs c ON e.club_id = c.id
         WHERE e.id = %s
@@ -68,7 +69,21 @@ def finalize_free_registration(cur, reg_id, event_id, team_name, student_ids):
                                 "FREE_REG", pay_dt, team_name)
                 generate_and_send_invoice(p['full_name'], [p['college_email']], meta['title'], meta['club_name'], 0, "FREE_REG", pay_dt,
                                           reg_no=p['reg_no'], student_p_email=p['college_email'], payer_name="System", payer_reg_no="N/A")
-            except Exception as e: print(f"Automation error: {e}")
+    # 4. Trigger Initial Reminders with Google Calendar Link
+    try:
+        cur.execute("SELECT name FROM halls WHERE id = %s", (meta['hall_id'],))
+        hall = cur.fetchone()
+        venue = hall['name'] if hall else "Venue Detail TBA"
+        
+        gcal_link = get_gcal_link(meta['title'], meta['start_date'], meta['end_date'], venue, f"Join us for {meta['title']}")
+        
+        for uid in student_ids:
+            p = profiles_map.get(uid)
+            if p and p['college_email']:
+                send_reminder_email(p['college_email'], p['full_name'], meta['title'], 'initial', meta['start_date'], venue, gcal_link)
+                # Track that initial reminder was sent
+                cur.execute("INSERT INTO reminders_sent (registration_id, student_id, reminder_type) VALUES (%s, %s, 'initial') ON CONFLICT DO NOTHING", (reg_id, uid, 'initial'))
+    except Exception as e: print(f"Reminder Trigger Error: {e}")
 
 registrations_bp = Blueprint('registrations', __name__)
 
@@ -293,7 +308,7 @@ def verify_payment(current_user):
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
                 # Find pending registration
                 cur.execute("""
-                     SELECT r.id, r.event_id, r.amount_paid, r.student_id, r.leader_id, r.payer_id, r.team_name, e.title, e.start_date, 
+                     SELECT r.id, r.event_id, r.amount_paid, r.student_id, r.leader_id, r.payer_id, r.team_name, e.title, e.start_date, e.end_date, e.hall_id,
                             c.name as club_name, c.razorpay_key_id, c.razorpay_key_secret, c.master_gsheet_link,
                             u.full_name, u.email, u.dob, u.reg_no, u.phone_number, u.college_email
                      FROM registrations r
@@ -372,6 +387,15 @@ def verify_payment(current_user):
                              reg_no=m['reg_no'], student_p_email=m['email'],
                              payer_name=reg['full_name'], payer_reg_no=reg['reg_no']
                          )
+                         # 3. Send Initial Reminder with Google Calendar Link
+                         try:
+                             cur.execute("SELECT name FROM halls WHERE id = %s", (reg['hall_id'],))
+                             hall = cur.fetchone()
+                             venue = hall['name'] if hall else "Venue Detail TBA"
+                             gcal_link = get_gcal_link(reg['title'], reg['start_date'], reg['end_date'], venue, f"Join us for {reg['title']}")
+                             send_reminder_email(m['college_email'], m['full_name'], reg['title'], 'initial', reg['start_date'], venue, gcal_link)
+                             cur.execute("INSERT INTO reminders_sent (registration_id, student_id, reminder_type) VALUES (%s, %s, 'initial') ON CONFLICT DO NOTHING", (reg['id'], m['id'], 'initial'))
+                         except Exception as re: print(f"Reminder Error: {re}")
                 except Exception as ex:
                      import logging
                      logging.error(f"Post-registration automation failed: {ex}")
