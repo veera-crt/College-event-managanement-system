@@ -867,7 +867,7 @@
                                             </div>
                                         ` : `
                                             <span class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-3">Mission Starts In</span>
-                                            <div class="countdown-timer flex gap-3 font-black text-primary text-2xl tracking-tighter" data-expiry="${r.start_date}">
+                                            <div class="countdown-timer flex gap-3 font-black text-primary text-2xl tracking-tighter" data-target="${r.start_date}">
                                                 -- : -- : --
                                             </div>
                                         `}
@@ -893,7 +893,7 @@
                                     </p>
                                 </div>
                                 ${r.is_leader && canEdit ? `
-                                    <button onclick="openEditTeamModal(${r.reg_id})" class="px-4 py-2 bg-slate-900 text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-primary transition-all">Edit Team</button>
+                                    <button onclick="openTeamEditModal(${r.reg_id}, ${r.event_id})" class="px-4 py-2 bg-slate-900 text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-primary transition-all">Edit Team</button>
                                 ` : ''}
                             </div>
                         </div>
@@ -967,9 +967,8 @@
 
             const footerBtn = document.querySelector('#regModal button.w-full');
             footerBtn.textContent = 'Apply Modification (Final)';
-            footerBtn.onclick = async () => {
+            footerBtn.onclick = async function handleEditSubmit(force_clash = false) {
                 const friend_ids = selectedTeamMembers.map((m, i) => {
-                    // Collect all IDs except the one that will be the LEADER
                     const currentLeadId = editingRegLeaderId;
                     const nextLeadId = document.getElementById('newLeaderSelect').value || currentLeadId;
                     return Number(m.id) === Number(nextLeadId) ? null : m.id;
@@ -977,16 +976,72 @@
                 
                 const new_leader_id = document.getElementById('newLeaderSelect').value;
                 try {
+                    Swal.fire({ title: 'Updating Mission Roster...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
                     const res = await AuthGuard.secureFetch('/api/registrations/edit-team', {
                         method: 'POST',
                         headers: {'Content-Type': 'application/json'},
                         body: JSON.stringify({ 
                             reg_id: editingRegId, 
                             friend_ids,
-                            new_leader_id: new_leader_id || null
+                            new_leader_id: new_leader_id || null,
+                            force_clash_acknowledge: force_clash
                         })
                     });
                     const data = await res.json();
+                    
+                    if (res.status === 409) {
+                        // CLASH DETECTED during edit
+                        let clashHtml = '<div class="text-left space-y-4 mt-4">';
+                        let hasSameTime = false;
+                        data.clashes.forEach(c => {
+                            if (c.clash_type === 'same_time') hasSameTime = true;
+                            const label = c.clash_type === 'same_time' ? 'SAME TIME' : 'SAME DAY';
+                            const color = c.clash_type === 'same_time' ? 'bg-red-100 text-red-600' : 'bg-amber-100 text-amber-600';
+                            clashHtml += `
+                                <div class="p-3 border rounded-xl bg-slate-50">
+                                    <div class="flex items-center justify-between mb-1">
+                                        <span class="text-[8px] font-black uppercase ${color} px-2 py-0.5 rounded-md">${label}</span>
+                                        <span class="text-[9px] font-black text-slate-400 uppercase tracking-tighter">${c.reg_no}</span>
+                                    </div>
+                                    <p class="text-[10px] font-black text-slate-900">${c.full_name}</p>
+                                    <p class="text-[9px] font-bold text-slate-500 italic mt-1">Clash with: ${c.event_title}</p>
+                                    <div class="flex items-center gap-2 mt-1 text-[8px] font-black text-primary uppercase italic">
+                                        <i data-lucide="clock" class="w-2.5 h-2.5"></i>
+                                        ${new Date(c.start_time).toLocaleString([], {day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit'})} 
+                                        - 
+                                        ${new Date(c.end_time).toLocaleString([], {day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit'})}
+                                    </div>
+                                </div>
+                            `;
+                        });
+
+                        if (hasSameTime) {
+                            clashHtml += `<div class="flex items-start gap-3 p-4 bg-red-50 border border-red-100 rounded-2xl mt-4">
+                                <input type="checkbox" id="forceClashEditCheck" class="mt-1">
+                                <label for="forceClashEditCheck" class="text-[10px] font-bold text-red-800 italic">Are you sure to add them? They will miss their other event.</label>
+                            </div>`;
+                        }
+                        clashHtml += '</div>';
+
+                        Swal.fire({
+                            title: 'Schedule Conflict',
+                            html: clashHtml,
+                            icon: 'warning',
+                            showCancelButton: true,
+                            confirmButtonText: 'Add Anyway',
+                            preConfirm: () => {
+                                if (hasSameTime && !document.getElementById('forceClashEditCheck').checked) {
+                                    Swal.showValidationMessage('Check the confirmation box to proceed');
+                                    return false;
+                                }
+                                return true;
+                            }
+                        }).then((result) => {
+                            if (result.isConfirmed) handleEditSubmit(true);
+                        });
+                        return;
+                    }
+
                     if(res.ok) {
                         Swal.fire('Success', 'Team and Leadership updated successfully!', 'success');
                         closeModal();

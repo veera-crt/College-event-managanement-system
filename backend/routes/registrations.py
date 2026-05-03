@@ -552,20 +552,25 @@ def edit_team(current_user):
                     return jsonify({"error": f"Invalid team size. Must be between {reg['min_team_size']} and {reg['max_team_size']}"}), 400
 
                 # 3. IDENTIFY UPDATES: Added vs Removed members
-                # Current members in registrations for this team
-                cur.execute("SELECT student_id FROM registrations WHERE event_id = %s AND leader_id = %s", (reg['event_id'], reg['leader_id']))
+                cur.execute("SELECT student_id FROM registration_members WHERE registration_id = %s", (reg_id,))
                 current_members = [row['student_id'] for row in cur.fetchall()]
                 
                 to_add = [uid for uid in all_ids if uid not in current_members]
                 to_remove = [uid for uid in current_members if uid not in all_ids]
 
-                # 4. Hall Capacity Validation (if adding members)
+                # 4. Collision Check for NEW members
+                if to_add:
+                    clashes = check_event_clashes(cur, to_add, reg['start_date'], reg['start_date'], current_reg_id=reg_id)
+                    if clashes:
+                        return jsonify({"error": "One or more new members have a schedule conflict", "clashes": clashes}), 409
+
+                # 5. Hall Capacity Validation (if adding members)
                 if reg['hall_capacity'] and to_add:
                     cur.execute("""
                         SELECT COUNT(rm.student_id) as current_count
                         FROM registration_members rm
                         JOIN registrations r ON rm.registration_id = r.id
-                        WHERE r.event_id = %s AND r.status IN ('approved', 'pending')
+                        WHERE r.event_id = %s AND r.status IN ('approved', 'ready_to_pay', 'waiting_friends')
                     """, (reg['event_id'],))
                     current_count = cur.fetchone()['current_count']
                     
@@ -576,34 +581,27 @@ def edit_team(current_user):
                     if len(to_add) > spots_left:
                         return jsonify({"error": f"Only {spots_left} persons allowed to be added. Cannot add {len(to_add)} members."}), 400
 
-                # 5. PERFORM DATABASE UPDATES
-                # Remove rows for dropped members
-                if to_remove:
-                    cur.execute("DELETE FROM registrations WHERE event_id = %s AND leader_id = %s AND student_id = ANY(%s)", 
-                               (reg['event_id'], reg['leader_id'], to_remove))
+                # 6. PERFORM DATABASE UPDATES
+                # Update the primary registration record
+                cur.execute("""
+                    UPDATE registrations 
+                    SET leader_id = %s, 
+                        edit_count = edit_count + 1 
+                    WHERE id = %s
+                """, (new_leader_id, reg_id))
                 
-                # Global update for kept members (updates leader_id and potentially team_name if we wanted, but let's stick to leader)
-                cur.execute("UPDATE registrations SET leader_id = %s WHERE event_id = %s AND leader_id = %s", 
-                           (new_leader_id, reg['event_id'], reg['leader_id']))
-                
-                # Add rows for new members
-                for uid in to_add:
-                    cur.execute("""
-                        INSERT INTO registrations (event_id, student_id, status, team_name, leader_id, payer_id, amount_paid)
-                        VALUES (%s, %s, 'approved', %s, %s, %s, 0)
-                    """, (reg['event_id'], uid, reg['team_name'], new_leader_id, reg['payer_id']))
-                
-                # Sync group-roster table (registration_members)
-                # Note: We use the OLD reg_id as the anchor, but update its leader if needed above
+                # Sync registration_members table
+                # We'll just replace the roster. Since this is an 'edit' of an approved team, 
+                # we set invite_status to 'accepted' for everyone.
                 cur.execute("DELETE FROM registration_members WHERE registration_id = %s", (reg_id,))
                 for uid in all_ids:
-                    cur.execute("INSERT INTO registration_members (registration_id, student_id) VALUES (%s, %s)", (reg_id, uid))
-                
-                # Increment edit count on the primary record
-                cur.execute("UPDATE registrations SET edit_count = edit_count + 1 WHERE id = %s", (reg_id,))
+                    cur.execute("""
+                        INSERT INTO registration_members (registration_id, student_id, invite_status) 
+                        VALUES (%s, %s, 'accepted')
+                    """, (reg_id, uid))
                 
                 conn.commit()
-                return jsonify({"message": "Team and Leadership updated successfully"}), 200
+                return jsonify({"message": "Team roster and leadership updated successfully"}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 @registrations_bp.route('/club-applications', methods=['GET'])
@@ -625,9 +623,8 @@ def get_club_applications(current_user):
                            u.full_name as leader_name, u.reg_no as leader_reg, u.email as leader_email
                     FROM registrations r
                     JOIN events e ON r.event_id = e.id
-                    JOIN users u ON r.student_id = u.id
+                    JOIN users u ON r.leader_id = u.id
                     WHERE e.club_id = %s 
-                    AND r.student_id = r.payer_id
                     ORDER BY r.registered_at DESC
                 """, (user['club_id'],))
                 regs = cur.fetchall()
