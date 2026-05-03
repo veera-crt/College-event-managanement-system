@@ -242,7 +242,12 @@ def initiate_registration(current_user):
                     # ASYNC TEAM FLOW: Waiting for friends
                     cur.execute("""
                         INSERT INTO registrations (event_id, student_id, status, amount_paid, team_name, leader_id, payer_id)
-                        VALUES (%s, %s, 'waiting_friends', %s, %s, %s, %s) RETURNING id
+                        VALUES (%s, %s, 'waiting_friends', %s, %s, %s, %s)
+                        ON CONFLICT (event_id, student_id) 
+                        DO UPDATE SET status = 'waiting_friends', amount_paid = EXCLUDED.amount_paid, 
+                                      team_name = EXCLUDED.team_name, leader_id = EXCLUDED.leader_id, 
+                                      payer_id = EXCLUDED.payer_id, registered_at = CURRENT_TIMESTAMP
+                        RETURNING id
                     """, (event_id, target_leader_id, reg_amount, team_name, target_leader_id, student_id))
                     reg_id = cur.fetchone()['id']
                     
@@ -261,13 +266,22 @@ def initiate_registration(current_user):
                     # FREE SOLO: Finalize immediately
                     cur.execute("""
                         INSERT INTO registrations (event_id, student_id, status, amount_paid, team_name, leader_id, payer_id)
-                        VALUES (%s, %s, 'approved', 0, %s, %s, %s) RETURNING id
-                    """, (event_id, target_leader_id, team_name, target_leader_id, student_id))
-                    new_reg_id = cur.fetchone()['id']
+                        VALUES (%s, %s, 'ready_to_pay', %s, %s, %s, %s)
+                        ON CONFLICT (event_id, student_id) 
+                        DO UPDATE SET status = 'ready_to_pay', amount_paid = EXCLUDED.amount_paid, 
+                                      team_name = EXCLUDED.team_name, leader_id = EXCLUDED.leader_id, 
+                                      payer_id = EXCLUDED.payer_id, registered_at = CURRENT_TIMESTAMP
+                        RETURNING id
+                    """, (event_id, target_leader_id, reg_amount, team_name, target_leader_id, student_id))
+                    reg_id = cur.fetchone()['id']
                     
-                    cur.execute("INSERT INTO registration_members (registration_id, student_id, invite_status) VALUES (%s, %s, 'accepted')", (new_reg_id, student_id))
+                    cur.execute("""
+                        INSERT INTO registration_members (registration_id, student_id, invite_status) 
+                        VALUES (%s, %s, 'accepted')
+                        ON CONFLICT (registration_id, student_id) DO UPDATE SET invite_status = 'accepted'
+                    """, (reg_id, student_id))
                     
-                    finalize_free_registration(cur, new_reg_id, event_id, team_name, all_member_ids)
+                    finalize_free_registration(cur, reg_id, event_id, team_name, all_member_ids)
                     conn.commit()
                     return jsonify({"message": "Successfully registered for free event", "type": "free"}), 200
 
@@ -436,6 +450,7 @@ def respond_invite(current_user):
                     cur.execute("UPDATE registration_members SET invite_status = 'accepted' WHERE registration_id = %s AND student_id = %s", (reg_id, student_id))
                 else:
                     cur.execute("UPDATE registration_members SET invite_status = 'rejected' WHERE registration_id = %s AND student_id = %s", (reg_id, student_id))
+                    # Mark whole reg as 'cancelled' but keep it visible for leader to retry
                     cur.execute("UPDATE registrations SET status = 'cancelled' WHERE id = %s", (reg_id,))
 
                 # Check if all members have accepted
@@ -719,3 +734,26 @@ def get_attendees(current_user, event_id):
                 }), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+@registrations_bp.route('/cancel-registration', methods=['POST'])
+@require_auth(roles=['student'])
+def cancel_registration(current_user):
+    data = request.json
+    reg_id = data.get('reg_id')
+    student_id = int(current_user['sub'])
+    
+    try:
+        with DatabaseConnection() as conn:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute("SELECT leader_id, payer_id, status FROM registrations WHERE id = %s", (reg_id,))
+                reg = cur.fetchone()
+                
+                if not reg: return jsonify({"error": "Registration not found"}), 404
+                if int(reg['leader_id']) != student_id and int(reg['payer_id']) != student_id:
+                    return jsonify({"error": "Unauthorized to cancel this registration"}), 403
+                
+                # Effectively 'deleting' it for the user by marking as archived/cancelled
+                cur.execute("UPDATE registrations SET status = 'cancelled' WHERE id = %s", (reg_id,))
+                conn.commit()
+                return jsonify({"message": "Registration cancelled successfully"}), 200
+    except Exception as e: return jsonify({"error": str(e)}), 500
