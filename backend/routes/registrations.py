@@ -69,6 +69,7 @@ def finalize_free_registration(cur, reg_id, event_id, team_name, student_ids):
                                 "FREE_REG", pay_dt, team_name)
                 generate_and_send_invoice(p['full_name'], [p['college_email']], meta['title'], meta['club_name'], 0, "FREE_REG", pay_dt,
                                           reg_no=p['reg_no'], student_p_email=p['college_email'], payer_name="System", payer_reg_no="N/A")
+            except Exception as e: print(f"Automation error: {e}")
     # 4. Trigger Initial Reminders with Google Calendar Link
     try:
         cur.execute("SELECT name FROM halls WHERE id = %s", (meta['hall_id'],))
