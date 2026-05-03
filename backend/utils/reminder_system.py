@@ -125,7 +125,7 @@ def check_and_send_reminders():
                 now = datetime.utcnow() + timedelta(hours=5, minutes=30)
                 future_limit = now + timedelta(hours=13)
                 
-                cur.execute(\"\"\"
+                cur.execute("""
                     SELECT r.id as reg_id, rm.student_id, u.full_name, u.college_email,
                            e.title, e.start_date, e.end_date, h.name as venue
                     FROM registrations r
@@ -136,7 +136,7 @@ def check_and_send_reminders():
                     WHERE r.status = 'approved'
                       AND e.start_date > %s
                       AND e.start_date < %s
-                \"\"\", (now, future_limit))
+                """, (now, future_limit))
                 
                 upcoming = cur.fetchall()
                 
@@ -155,10 +155,10 @@ def check_and_send_reminders():
 
                     if reminder_type:
                         # Check if already sent
-                        cur.execute(\"\"\"
+                        cur.execute("""
                             SELECT id FROM reminders_sent 
                             WHERE registration_id = %s AND student_id = %s AND reminder_type = %s
-                        \"\"\", (task['reg_id'], task['student_id'], reminder_type))
+                        """, (task['reg_id'], task['student_id'], reminder_type))
                         
                         if not cur.fetchone():
                             gcal_link = None
@@ -171,10 +171,10 @@ def check_and_send_reminders():
                             )
                             
                             if success:
-                                cur.execute(\"\"\"
+                                cur.execute("""
                                     INSERT INTO reminders_sent (registration_id, student_id, reminder_type)
                                     VALUES (%s, %s, %s)
-                                \"\"\", (task['reg_id'], task['student_id'], reminder_type))
+                                """, (task['reg_id'], task['student_id'], reminder_type))
                                 conn.commit()
                                 print(f"Sent {reminder_type} reminder to {task['full_name']} for {task['title']}")
     except Exception as e:
