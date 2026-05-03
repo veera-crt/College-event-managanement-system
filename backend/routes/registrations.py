@@ -134,7 +134,7 @@ def initiate_registration(current_user):
                 # Fetch Event details
                 cur.execute("""
                     SELECT e.title, e.reg_amount, e.club_id, e.female_mandatory, e.min_team_size, e.team_size as max_team_size,
-                           e.reg_deadline, e.end_date, e.hall_id,
+                           e.reg_deadline, e.start_date, e.end_date, e.hall_id,
                            c.razorpay_key_id, c.razorpay_key_secret,
                            h.capacity as hall_capacity
                     FROM events e
