@@ -1836,7 +1836,13 @@
                                     <span class="text-[9px] font-black text-slate-400 uppercase tracking-tighter">${c.reg_no}</span>
                                 </div>
                                 <p class="text-[10px] font-black text-slate-900">${c.full_name}</p>
-                                <p class="text-[9px] font-bold text-slate-500 italic mt-1">Has already registered for: ${c.event_title}</p>
+                                <p class="text-[9px] font-bold text-slate-500 italic mt-1">Registered for: ${c.event_title}</p>
+                                <div class="flex items-center gap-2 mt-1 text-[8px] font-black text-primary uppercase italic">
+                                    <i data-lucide="clock" class="w-2.5 h-2.5"></i>
+                                    ${new Date(c.start_time).toLocaleString([], {day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit'})} 
+                                    - 
+                                    ${new Date(c.end_time).toLocaleString([], {day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit'})}
+                                </div>
                             </div>
                         `;
                     });
@@ -1981,6 +1987,12 @@
                         clashHtml += `<div class="p-3 border rounded-xl bg-slate-50">
                             <span class="text-[8px] font-black uppercase bg-amber-100 text-amber-600 px-2 py-0.5 rounded-md">${label}</span>
                             <p class="text-[10px] font-black text-slate-900 mt-1">Clash with: ${c.event_title}</p>
+                            <div class="flex items-center gap-2 mt-1 text-[8px] font-black text-primary uppercase italic">
+                                <i data-lucide="clock" class="w-2.5 h-2.5"></i>
+                                ${new Date(c.start_time).toLocaleString([], {day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit'})} 
+                                - 
+                                ${new Date(c.end_time).toLocaleString([], {day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit'})}
+                            </div>
                         </div>`;
                     });
                     if (hasSameTime) {

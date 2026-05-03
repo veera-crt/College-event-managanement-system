@@ -39,7 +39,9 @@ def check_event_clashes(cur, student_ids, new_start, new_end, current_reg_id=Non
             "full_name": c['full_name'],
             "reg_no": c['reg_no'],
             "event_title": c['event_title'],
-            "clash_type": clash_type
+            "clash_type": clash_type,
+            "start_time": c['start_date'].isoformat(),
+            "end_time": c['end_date'].isoformat()
         })
     return clashes
 
