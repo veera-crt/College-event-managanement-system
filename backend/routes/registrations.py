@@ -9,6 +9,64 @@ from utils.invoice_generator import generate_and_send_invoice
 from utils.gsheets_bot import append_to_sheet
 from utils.crypto_utils import decrypt_data
 
+def check_event_clashes(cur, student_ids, new_start, new_end, current_reg_id=None):
+    """
+    Returns a list of clashes for the given students within the time window.
+    """
+    cur.execute("""
+        SELECT rm.student_id, u.full_name, u.reg_no, e.title as event_title, e.start_date, e.end_date
+        FROM registration_members rm
+        JOIN registrations r ON rm.registration_id = r.id
+        JOIN events e ON r.event_id = e.id
+        JOIN users u ON rm.student_id = u.id
+        WHERE rm.student_id = ANY(%s)
+          AND r.status IN ('approved', 'ready_to_pay', 'waiting_friends')
+          AND r.id != COALESCE(%s, -1)
+          AND (
+            (e.start_date::date = %s::date)
+          )
+    """, (student_ids, current_reg_id, new_start))
+    potential_clashes = cur.fetchall()
+    
+    clashes = []
+    for c in potential_clashes:
+        # Overlap check: (start1 < end2) AND (end1 > start2)
+        is_overlap = (new_start < c['end_date']) and (new_end > c['start_date'])
+        clash_type = 'same_time' if is_overlap else 'same_day'
+        clashes.append({
+            "student_id": c['student_id'],
+            "full_name": c['full_name'],
+            "reg_no": c['reg_no'],
+            "event_title": c['event_title'],
+            "clash_type": clash_type
+        })
+    return clashes
+
+def finalize_free_registration(cur, reg_id, event_id, team_name, student_ids):
+    cur.execute("""
+        SELECT e.title, e.start_date, c.name as club_name, c.master_gsheet_link
+        FROM events e
+        LEFT JOIN clubs c ON e.club_id = c.id
+        WHERE e.id = %s
+    """, (event_id,))
+    meta = cur.fetchone()
+    
+    cur.execute("SELECT id, full_name, reg_no, phone_number, dob, gender, college_email FROM users WHERE id = ANY(%s)", (student_ids,))
+    profiles_map = {p['id']: p for p in cur.fetchall()}
+    pay_dt = (datetime.utcnow() + timedelta(hours=5, minutes=30)).isoformat()
+    
+    for uid in student_ids:
+        p = profiles_map.get(uid)
+        if not p: continue
+        if meta and meta['master_gsheet_link']:
+            try:
+                append_to_sheet(meta['master_gsheet_link'], meta['title'], meta['club_name'], meta['start_date'].isoformat(),
+                                p['full_name'], p['dob'], p['reg_no'], p['phone_number'], p['college_email'], p['college_email'],
+                                "FREE_REG", pay_dt, team_name)
+                generate_and_send_invoice(p['full_name'], [p['college_email']], meta['title'], meta['club_name'], 0, "FREE_REG", pay_dt,
+                                          reg_no=p['reg_no'], student_p_email=p['college_email'], payer_name="System", payer_reg_no="N/A")
+            except Exception as e: print(f"Automation error: {e}")
+
 registrations_bp = Blueprint('registrations', __name__)
 
 @registrations_bp.route('/initiate', methods=['POST'])
@@ -33,11 +91,16 @@ def initiate_registration(current_user):
     try:
         with DatabaseConnection() as conn:
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
-                # 1. Check if ANY member is already 'approved'
-                cur.execute("SELECT student_id FROM registrations WHERE event_id = %s AND status = 'approved' AND student_id = ANY(%s)", (event_id, all_member_ids))
+                # 1. Check if ANY member is already 'approved' for this event
+                cur.execute("""
+                    SELECT r.student_id, u.full_name, u.reg_no 
+                    FROM registrations r 
+                    JOIN users u ON r.student_id = u.id 
+                    WHERE r.event_id = %s AND r.status IN ('approved', 'ready_to_pay', 'waiting_friends') AND r.student_id = ANY(%s)
+                """, (event_id, all_member_ids))
                 already = cur.fetchone()
                 if already:
-                    return jsonify({"error": f"Member {already['student_id']} is already registered (approved) for this event"}), 400
+                    return jsonify({"error": f"{already['full_name']} ({already['reg_no']}) is already registered for this event."}), 400
 
                 # 2. Cleanup ANY existing 'pending' registration for the current leader for this event
                 # This allows them to restart the process if they previously closed the payment window.
@@ -146,91 +209,68 @@ def initiate_registration(current_user):
                     names = ", ".join([row['full_name'] for row in already_reg])
                     return jsonify({"error": f"One or more members are already registered for this mission: {names}"}), 400
 
+                # NEW: Collision Check
+                force_clash = data.get('force_clash_acknowledge', False)
+                clashes = check_event_clashes(cur, all_member_ids, event['start_date'], event['end_date'])
+                
+                if clashes and not force_clash:
+                    return jsonify({"error": "Schedule conflict detected", "clashes": clashes}), 409
+
                 reg_amount = float(event['reg_amount'])
+                target_leader_id = int(data.get('leader_id', student_id))
+
+                if len(friend_ids) > 0:
+                    # ASYNC TEAM FLOW: Waiting for friends
+                    cur.execute("""
+                        INSERT INTO registrations (event_id, student_id, status, amount_paid, team_name, leader_id, payer_id)
+                        VALUES (%s, %s, 'waiting_friends', %s, %s, %s, %s) RETURNING id
+                    """, (event_id, target_leader_id, reg_amount, team_name, target_leader_id, student_id))
+                    reg_id = cur.fetchone()['id']
+                    
+                    expiry = datetime.now() + timedelta(hours=1)
+                    for uid in all_member_ids:
+                        status = 'accepted' if uid == student_id else 'pending'
+                        cur.execute("""
+                            INSERT INTO registration_members (registration_id, student_id, invite_status, invite_expires_at)
+                            VALUES (%s, %s, %s, %s)
+                        """, (reg_id, uid, status, expiry))
+                    
+                    conn.commit()
+                    return jsonify({"message": "Invitations sent to team members", "type": "team_invite", "registration_id": reg_id}), 200
 
                 if reg_amount <= 0:
-                    # FREE EVENT: Create ONE registration for the team
+                    # FREE SOLO: Finalize immediately
                     cur.execute("""
-                        SELECT e.title, e.start_date, c.name as club_name, c.master_gsheet_link
-                        FROM events e
-                        LEFT JOIN clubs c ON e.club_id = c.id
-                        WHERE e.id = %s
-                    """, (event_id,))
-                    meta = cur.fetchone()
+                        INSERT INTO registrations (event_id, student_id, status, amount_paid, team_name, leader_id, payer_id)
+                        VALUES (%s, %s, 'approved', 0, %s, %s, %s) RETURNING id
+                    """, (event_id, target_leader_id, team_name, target_leader_id, student_id))
+                    new_reg_id = cur.fetchone()['id']
                     
-                    # 1. Create one primary registration row for the team
-                    target_leader_id = data.get('leader_id') or student_id
-                    # 1. Create registration rows for EVERY member (explicit tracking)
-                    target_leader_id = data.get('leader_id') or student_id
-                    new_reg_id = None
-                    for uid in all_member_ids:
-                        cur.execute("""
-                            INSERT INTO registrations (event_id, student_id, status, team_name, leader_id, payer_id)
-                            VALUES (%s, %s, 'approved', %s, %s, %s) RETURNING id
-                        """, (event_id, uid, team_name, target_leader_id, student_id))
-                        if uid == target_leader_id:
-                            new_reg_id = cur.fetchone()['id']
-                        else:
-                            # If we just inserted a member, we still need one ID for registration_members link
-                            inserted_id = cur.fetchone()['id']
-                            if not new_reg_id: new_reg_id = inserted_id
-
-                    # 2. Add all members to registration_members
-                    pay_datetime = (datetime.utcnow() + timedelta(hours=5, minutes=30)).isoformat()
-                    for uid in all_member_ids:
-                        cur.execute("INSERT INTO registration_members (registration_id, student_id) VALUES (%s, %s)", (new_reg_id, uid))
-                        
-                        # Sync and Invoice
-                        p = profiles_map.get(uid)
-                        if meta and meta['master_gsheet_link']:
-                            try:
-                                from utils.gsheets_bot import append_to_sheet
-                                append_to_sheet(
-                                    meta['master_gsheet_link'], meta['title'], meta['club_name'], 
-                                    meta['start_date'].isoformat() if meta['start_date'] else "",
-                                    p['full_name'], p['dob'], p['reg_no'], p['phone_number'],
-                                    p['email'], p['college_email'], "FREE_REG", pay_datetime, team_name
-                                )
-                                generate_and_send_invoice(
-                                    p['full_name'], [p['email'], p['college_email']], meta['title'], meta['club_name'], 
-                                    0, "FREE_REG", pay_datetime,
-                                    reg_no=p['reg_no'], student_p_email=p['email'],
-                                    payer_name=profiles_map.get(student_id)['full_name'],
-                                    payer_reg_no=profiles_map.get(student_id)['reg_no']
-                                )
-                            except Exception as e:
-                                print(f"Free reg automation failed for {uid}: {e}")
-
+                    cur.execute("INSERT INTO registration_members (registration_id, student_id, invite_status) VALUES (%s, %s, 'accepted')", (new_reg_id, student_id))
+                    
+                    finalize_free_registration(cur, new_reg_id, event_id, team_name, all_member_ids)
                     conn.commit()
-                    return jsonify({"message": "Successfully registered team for free event", "type": "free"}), 200
+                    return jsonify({"message": "Successfully registered for free event", "type": "free"}), 200
 
-                # Paid Event: One order for the whole team (Leader pays)
-                dec_key_id = decrypt_data(event['razorpay_key_id']) if event.get('razorpay_key_id') else None
-                dec_key_secret = decrypt_data(event['razorpay_key_secret']) if event.get('razorpay_key_secret') else None
-                if not dec_key_id or not dec_key_secret:
-                    return jsonify({"error": "Payment gateway not configured for this club"}), 400
-
-                client = razorpay.Client(auth=(dec_key_id, dec_key_secret))
-                razorpay_order = client.order.create(dict(amount=int(reg_amount * 100), currency='INR', receipt=f"team_{event_id}_{student_id}"))
+                # PAID SOLO FLOW: Standard order creation
+                client = razorpay.Client(auth=(decrypt_data(event['razorpay_key_id']), decrypt_data(event['razorpay_key_secret'])))
+                razorpay_order = client.order.create(dict(amount=int(reg_amount * 100), currency='INR', receipt=f"solo_{event_id}_{student_id}"))
                 
-                # Insert pending registration for leader record (Primary record)
-                target_leader_id = data.get('leader_id') or student_id
                 cur.execute("""
                     INSERT INTO registrations (event_id, student_id, status, razorpay_order_id, amount_paid, team_name, leader_id, payer_id)
                     VALUES (%s, %s, 'pending', %s, %s, %s, %s, %s) RETURNING id
                 """, (event_id, target_leader_id, razorpay_order['id'], reg_amount, team_name, target_leader_id, student_id))
                 reg_id = cur.fetchone()['id']
-                
-                # Insert members into registration_members (including leader for clarity)
-                for uid in all_member_ids:
-                    cur.execute("INSERT INTO registration_members (registration_id, student_id) VALUES (%s, %s)", (reg_id, uid))
+                cur.execute("INSERT INTO registration_members (registration_id, student_id, invite_status) VALUES (%s, %s, 'accepted')", (reg_id, student_id))
                 
                 conn.commit()
                 return jsonify({
                     "message": "Order created", "type": "paid", "order_id": razorpay_order['id'],
-                    "amount": reg_amount, "key": dec_key_id
+                    "amount": reg_amount, "key": decrypt_data(event['razorpay_key_id'])
                 }), 200
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
 
@@ -338,6 +378,84 @@ def verify_payment(current_user):
     except Exception as e:
          return jsonify({"error": str(e)}), 500
 
+@registrations_bp.route('/respond-invite', methods=['POST'])
+@require_auth(roles=['student'])
+def respond_invite(current_user):
+    data = request.json
+    reg_id = data.get('registration_id')
+    action = data.get('action') # 'accepted' or 'rejected'
+    student_id = int(current_user['sub'])
+    force_clash = data.get('force_clash_acknowledge', False)
+
+    try:
+        with DatabaseConnection() as conn:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute("""
+                    SELECT rm.invite_status, rm.invite_expires_at, r.event_id, r.status, r.team_name, r.amount_paid, e.start_date, e.end_date
+                    FROM registration_members rm
+                    JOIN registrations r ON rm.registration_id = r.id
+                    JOIN events e ON r.event_id = e.id
+                    WHERE rm.registration_id = %s AND rm.student_id = %s
+                """, (reg_id, student_id))
+                invite = cur.fetchone()
+                if not invite: return jsonify({"error": "Invitation not found"}), 404
+                if invite['invite_status'] != 'pending': return jsonify({"error": "Invitation already processed"}), 400
+                if invite['invite_expires_at'] < datetime.now(): return jsonify({"error": "Invitation expired"}), 400
+
+                if action == 'accepted':
+                    clashes = check_event_clashes(cur, [student_id], invite['start_date'], invite['end_date'], current_reg_id=reg_id)
+                    if clashes and not force_clash: return jsonify({"error": "Conflict detected", "clashes": clashes}), 409
+                    cur.execute("UPDATE registration_members SET invite_status = 'accepted' WHERE registration_id = %s AND student_id = %s", (reg_id, student_id))
+                else:
+                    cur.execute("UPDATE registration_members SET invite_status = 'rejected' WHERE registration_id = %s AND student_id = %s", (reg_id, student_id))
+                    cur.execute("UPDATE registrations SET status = 'cancelled' WHERE id = %s", (reg_id,))
+
+                # Check if all members have accepted
+                cur.execute("""
+                    SELECT COUNT(*) as total, 
+                           SUM(CASE WHEN invite_status = 'accepted' THEN 1 ELSE 0 END) as accepted
+                    FROM registration_members WHERE registration_id = %s
+                """, (reg_id,))
+                stats = cur.fetchone()
+                
+                if stats['total'] == stats['accepted']:
+                    if float(invite['amount_paid']) <= 0:
+                        cur.execute("UPDATE registrations SET status = 'approved' WHERE id = %s", (reg_id,))
+                        cur.execute("SELECT student_id FROM registration_members WHERE registration_id = %s", (reg_id,))
+                        mids = [r['student_id'] for r in cur.fetchall()]
+                        finalize_free_registration(cur, reg_id, invite['event_id'], invite['team_name'], mids)
+                    else:
+                        cur.execute("UPDATE registrations SET status = 'ready_to_pay' WHERE id = %s", (reg_id,))
+                
+                conn.commit()
+                return jsonify({"message": f"Invitation {action} successfully"}), 200
+    except Exception as e: return jsonify({"error": str(e)}), 500
+
+@registrations_bp.route('/generate-payment', methods=['POST'])
+@require_auth(roles=['student'])
+def generate_payment(current_user):
+    data = request.json
+    reg_id = data.get('registration_id')
+    student_id = int(current_user['sub'])
+    try:
+        with DatabaseConnection() as conn:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute("""
+                    SELECT r.*, e.razorpay_key_id, e.razorpay_key_secret 
+                    FROM registrations r 
+                    JOIN events e ON r.event_id = e.id 
+                    WHERE r.id = %s AND r.payer_id = %s AND r.status = 'ready_to_pay'
+                """, (reg_id, student_id))
+                reg = cur.fetchone()
+                if not reg: return jsonify({"error": "Registration not ready for payment or unauthorized"}), 400
+
+                client = razorpay.Client(auth=(decrypt_data(reg['razorpay_key_id']), decrypt_data(reg['razorpay_key_secret'])))
+                order = client.order.create(dict(amount=int(float(reg['amount_paid']) * 100), currency='INR', receipt=f"team_{reg['event_id']}_{student_id}"))
+                cur.execute("UPDATE registrations SET razorpay_order_id = %s, status = 'pending' WHERE id = %s", (order['id'], reg_id))
+                conn.commit()
+                return jsonify({"order_id": order['id'], "amount": float(reg['amount_paid']), "key": decrypt_data(reg['razorpay_key_id'])}), 200
+    except Exception as e: return jsonify({"error": str(e)}), 500
+
 @registrations_bp.route('/my-registrations', methods=['GET'])
 @require_auth(roles=['student'])
 def get_my_registrations(current_user):
@@ -347,7 +465,7 @@ def get_my_registrations(current_user):
                 uid = int(current_user['sub'])
                 cur.execute("""
                     SELECT DISTINCT r.id as reg_id, r.event_id, r.status, r.amount_paid, r.registered_at, r.team_name, r.razorpay_payment_id, r.edit_count,
-                           r.leader_id, r.payer_id,
+                           r.leader_id, r.payer_id, rm_me.invite_status, rm_me.invite_expires_at,
                            e.title, e.start_date, e.end_date, e.min_team_size, e.team_size as max_team_size,
                            h.name as hall_name, c.name as club_name,
                            COALESCE(att.manual_present, FALSE) as manual_present,
@@ -355,24 +473,24 @@ def get_my_registrations(current_user):
                            att.event_otp
                     FROM registrations r
                     JOIN events e ON r.event_id = e.id
+                    LEFT JOIN registration_members rm_me ON r.id = rm_me.registration_id AND rm_me.student_id = %s
                     LEFT JOIN halls h ON e.hall_id = h.id
                     LEFT JOIN clubs c ON e.club_id = c.id
                     LEFT JOIN attendance att ON att.event_id = r.event_id AND att.student_id = %s
                     WHERE r.student_id = %s 
                        OR r.id IN (SELECT registration_id FROM registration_members WHERE student_id = %s)
                     ORDER BY r.registered_at DESC
-                """, (uid, uid, uid))
+                """, (uid, uid, uid, uid))
                 regs = cur.fetchall()
                 for r in regs:
                     r['is_leader'] = (int(r['leader_id']) == uid)
-                for r in regs:
+                    if r['invite_expires_at']: r['invite_expires_at'] = r['invite_expires_at'].isoformat()
                     if r['start_date']: r['start_date'] = r['start_date'].isoformat()
                     if r['end_date']: r['end_date'] = r['end_date'].isoformat()
                     if r['registered_at']: r['registered_at'] = r['registered_at'].isoformat()
                     
-                    # Fetch team members for this registration
                     cur.execute("""
-                        SELECT u.id, u.full_name, u.reg_no, u.gender
+                        SELECT u.id, u.full_name, u.reg_no, u.gender, rm.invite_status
                         FROM registration_members rm
                         JOIN users u ON rm.student_id = u.id
                         WHERE rm.registration_id = %s

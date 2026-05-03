@@ -1,0 +1,36 @@
+Architectural Document: Sprint 2
+Project Title: College Event Management System (CampusHub) Sprint Focus: Online Event Registration, Cultural Ticket Booking, and Administrative Operations
+
+4. Architectural Explanation: Sprint 2
+During Sprint 2, the system's baseline architecture is expanded to transition from basic platform setup to active event execution and operational management capabilities. The architecture follows a serverless microservices pattern, ensuring that new features are modular and do not disrupt the core logic established in Sprint 1.
+
+The core components introduced in this sprint include:
+
+• RESTful API Gateway: Acts as the central traffic controller, securely routing frontend HTTP requests (GET, POST, DELETE) to the appropriate backend microservice.
+• Event & Ticketing Engine: A dedicated transactional service that processes student interactions, specifically handling "Online Event Registrations" and "Cultural Event Ticket Booking". It interfaces with the database to check real-time ticket availability and safely executes booking operations to prevent overbooking.
+• Attendance Tracking Service: Handles all CRUD (Create, Read, Update, Delete) operations related to recording student participation. It processes data from the organizer dashboard to digitally mark presence, directly linking attendance records to certificate eligibility.
+• Schedule Monitoring Service: A dedicated service module specifically designed to handle timeline management, allowing admins to query real-time event schedules to monitor ongoing events and actively prevent overlapping hall conflicts.
+• Certificate Management Service: A specialized file-handling microservice that manages the upload of event certificates by organizers and provides a seamless, one-click download retrieval process for verified students.
+
+2. Ticketing & Registration Execution Flow
+The Event & Ticketing Engine is the most logically complex feature of Sprint 2. The execution flow follows a strict sequence to ensure data consistency and prevent overbooking:
+
+1. Query Initiation: The student selects an event or cultural program and submits a registration request via the frontend dashboard.
+2. API Routing: The frontend transmits this data as a structured HTTP POST request to the API Gateway.
+3. Input Sanitization: Before interacting with the database, the Ticketing Engine scrubs the input parameters to prevent SQL injection attacks and actively verifies real-time ticket availability.
+4. Database Query: The engine executes a transactional query, interacting with the registrations and culturals tables. It enforces strict unique constraints to instantly block duplicate bookings for the same student.
+5. Response Delivery:
+   * If successful: The engine packages the booking confirmation into a JSON format and sends a 200 OK response back to the frontend to render the success screen and trigger the ticket generation.
+   * If full or conflict found: The engine returns an error response, prompting the frontend UI to display an "Event Full" or "Already Registered" warning message.
+
+3. API Data Exchange Contracts
+To formalize communication between the client and the new serverless functions, the following API contracts have been established. All endpoints utilize lightweight JSON payloads.
+
+| Endpoint | HTTP Method | Purpose | Expected Request Payload |
+| :--- | :--- | :--- | :--- |
+| `/api/registrations/initiate` | POST | Processes student event registrations, enforcing team limits and duplicate checks. | `{"event_id": 101, "team_name": "Alpha", "friend_ids": [2, 3]}` |
+| `/api/culturals/book` | POST | Safely executes ticket booking for cultural events, updating real-time availability. | `{"cultural_id": 55}` |
+| `/api/attendance/mark` | POST | Allows organizers to digitally mark a student's presence at an active event. | `{"event_id": 101, "student_id": 5}` |
+| `/api/certificates/upload` | POST | Manages the upload of generated event certificates for eligible attendees. | `Multipart Form Data (file, "event_id"=101, "student_id"=5)` |
+| `/api/admin/events/calendar` | GET | Fetches ongoing event schedules across all halls to actively monitor and prevent overlapping conflicts. | `None (Uses GET Request)` |
+

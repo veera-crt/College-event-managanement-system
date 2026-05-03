@@ -1,0 +1,93 @@
+Functional Document: Sprint 2
+Project: College Event Management System (CampusHub)
+
+1. Introduction
+This document outlines the functional requirements and specifications for Sprint 2 of the CampusHub platform. While Sprint 1 established the foundational user management and authentication, Sprint 2 introduces the core operational capabilities required to actually run and manage college events efficiently.
+
+2. Product Goal
+To provide a centralized, secure, and automated platform for managing college events. The goal is to eliminate manual paperwork by enabling seamless online registrations, cultural ticket booking, real-time attendance tracking, proactive schedule conflict monitoring, and streamlined certificate distribution.
+
+3. Demography (Users, Location)
+
+Users
+
+Target Users: Students, Organizers (Club members), and Administrators
+
+User Characteristics: College-aged students, faculty members, varying technical proficiency
+
+Location
+
+Target Location: Campus-wide deployment (Accessible via web browsers on mobile and desktop)
+
+4. Business Processes
+
+The key business processes include:
+
+Online Event Registration:
+Students browse events and submit registration requests. The system validates capacity limits and unique constraints before confirming the registration.
+
+Cultural Event Ticket Booking:
+Students select cultural events and book tickets securely while the system deducts available tickets in real-time to prevent overbooking.
+
+Digital Attendance Tracking:
+Organizers access a digital registry during an event to mark student presence, which serves as proof for certificate eligibility.
+
+Certificate Upload and Retrieval:
+Following an event, organizers upload certificates. Verified attendees can then seamlessly download them directly from their profiles.
+
+Schedule Monitoring:
+Global Admins access a centralized calendar to monitor all booked halls and actively resolve overlapping conflicts.
+
+5. Features
+
+5.1 Feature #1: Online Event Registration
+
+1. Description: Allows students to register for technical and non-technical events either individually or as a team. The system enforces strict unique database constraints to prevent duplicate registrations and enforces minimum/maximum team size limits.
+
+2. User Story: "As a student, I want to register online for events so that I do not need to use manual forms or offline registration."
+
+5.2 Feature #2: Cultural Event Ticket Booking
+
+1. Description: Enables secure ticket booking for cultural events. The ticketing engine utilizes real-time decrementing of 'available_tickets' at the database level to mathematically guarantee that overbooking cannot occur.
+
+2. User Story: "As a student, I want to book tickets for cultural events so that my participation is confirmed and seats are managed properly."
+
+5.3 Feature #3: Digital Attendance Tracking
+
+1. Description: Provides organizers with a digital dashboard to mark student presence. Attendance data is securely stored and serves as the primary eligibility check before a student can receive an event certificate.
+
+2. User Story: "As an event organizer, I want to mark student attendance digitally so that only eligible participants receive certificates."
+
+5.4 Feature #4: Schedule Monitoring
+
+1. Description: A centralized calendar module designed specifically for Global Admins. It aggregates all approved event schedules across all campus halls to visually highlight and prevent overlapping bookings.
+
+2. User Story: "As an admin, I want to monitor event schedules so that overlapping events and hall conflicts are prevented."
+
+5.5 Feature #5: Certificate Upload & Download
+
+1. Description: A specialized file-handling module where organizers securely upload event certificates. Once uploaded, the system provides a seamless, one-click download retrieval process exclusively for students whose attendance was verified.
+
+2. User Story: "As a student, I want to download my participation certificate so that I can access it easily without contacting organizers."
+
+6. Authorization Matrix
+Strict Role-Based Access Control (RBAC) ensures users only access appropriate features:
+
+| Feature / Action            | Student | Organizer | Admin |
+|-----------------------------|---------|-----------|-------|
+| Register for Events         | YES     | NO        | NO    |
+| Book Cultural Tickets       | YES     | NO        | NO    |
+| Mark Digital Attendance     | NO      | YES       | NO    |
+| Upload Certificates         | NO      | YES       | NO    |
+| Monitor Global Schedules    | NO      | NO        | YES   |
+| View/Download Certificate   | YES     | YES       | NO    |
+
+7. Assumptions
+
+1. All users possess a valid institutional email address used for initial registration.
+
+2. The system assumes a stable network connection to perform real-time ticket availability checks.
+
+3. Third-party payment gateways (e.g., Razorpay) are properly configured and operational for cultural event transactions.
+
+4. Organizers will act in good faith and manually verify physical presence before marking a student as 'Present' in the digital attendance registry.

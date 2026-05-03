@@ -662,6 +662,10 @@
                     return;
                 }
 
+                // Start timer for countdowns
+                if (window.updateInterval) clearInterval(window.updateInterval);
+                window.updateInterval = setInterval(updateCountdowns, 1000);
+
                 list.innerHTML = combined.map(r => {
                     if (r.type === 'cultural') {
                         return `
@@ -711,26 +715,74 @@
                         </div>`;
                     }
 
-                    // Original Registration Card HTML ...
+                    // Registration Card Logic
                     const eventDate = new Date(r.start_date);
                     const isWithinWindow = r.start_date && (new Date(r.start_date) - new Date() > 7 * 60 * 60 * 1000);
-                    const canEdit = r.edit_count < 2 && isWithinWindow;
+                    const canEdit = r.edit_count < 2 && isWithinWindow && r.status === 'approved';
+
+                    let statusLabel = r.status;
+                    let statusClass = 'bg-blue-50 text-blue-600 border-blue-100';
+                    if (r.status === 'approved') statusClass = 'bg-green-50 text-green-600 border-green-100';
+                    if (r.status === 'waiting_friends') {
+                        statusLabel = 'Waiting for Friends';
+                        statusClass = 'bg-amber-50 text-amber-600 border-amber-100';
+                    }
+                    if (r.status === 'ready_to_pay') {
+                        statusLabel = 'Ready to Pay';
+                        statusClass = 'bg-emerald-50 text-emerald-600 border-emerald-100';
+                    }
+                    if (r.status === 'rejected' || r.status === 'cancelled') statusClass = 'bg-red-50 text-red-600 border-red-100';
+
+                    // Check if I have a pending invitation
+                    const isInvite = r.invite_status === 'pending';
+                    if (isInvite) {
+                        return `
+                        <div class="bg-indigo-50 border-2 border-indigo-200 rounded-[2rem] overflow-hidden shadow-lg animate-in">
+                            <div class="p-6">
+                                <div class="flex items-center justify-between mb-4">
+                                    <div class="flex items-center gap-4">
+                                        <div class="h-12 w-12 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-lg">
+                                            <i data-lucide="user-plus" class="w-6 h-6"></i>
+                                        </div>
+                                        <div>
+                                            <h4 class="font-black text-slate-900 tracking-tight">Team Mission Invitation</h4>
+                                            <p class="text-[9px] font-bold text-indigo-600 uppercase tracking-widest mt-0.5">${r.title}</p>
+                                        </div>
+                                    </div>
+                                    <div class="text-right">
+                                        <p class="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Expires In</p>
+                                        <div class="countdown-timer text-[12px] font-black text-indigo-600 tabular-nums italic" data-expiry="${r.invite_expires_at}">--:--</div>
+                                    </div>
+                                </div>
+                                <div class="p-4 bg-white rounded-2xl border border-indigo-100 mb-6">
+                                    <div class="flex items-center justify-between text-[10px] font-bold text-slate-700">
+                                        <span>${r.team_name}</span>
+                                        <span class="text-slate-400">Led by ${r.members.find(m => m.id == r.leader_id)?.full_name || 'Leader'}</span>
+                                    </div>
+                                </div>
+                                <div class="flex gap-3">
+                                    <button onclick="respondInvite(${r.reg_id}, 'accepted')" class="flex-1 py-3 bg-indigo-600 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-indigo-700 transition-all shadow-md active:scale-95">Accept Mission</button>
+                                    <button onclick="respondInvite(${r.reg_id}, 'rejected')" class="px-6 py-3 bg-white text-slate-600 border border-slate-200 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-50 transition-all active:scale-95">Decline</button>
+                                </div>
+                            </div>
+                        </div>`;
+                    }
 
                     return `
                     <div id="reg-card-${r.reg_id}" class="bg-white rounded-[2rem] border border-slate-100 shadow-sm overflow-hidden transition-all hover:shadow-md">
                         <!-- Summary Row -->
                         <div onclick="toggleRegDetails(${r.reg_id})" class="p-6 flex items-center justify-between cursor-pointer group">
                             <div class="flex items-center gap-5">
-                                <div class="h-14 w-14 rounded-2xl bg-blue-50 text-primary flex items-center justify-center shadow-inner group-hover:bg-primary group-hover:text-white transition-all">
+                                <div class="h-14 w-14 rounded-2xl ${statusClass.split(' ')[0]} ${statusClass.split(' ')[1]} flex items-center justify-center shadow-inner transition-all">
                                     <i data-lucide="${r.amount_paid > 0 ? 'shield-check' : 'zap'}" class="w-6 h-6"></i>
                                 </div>
                                 <div>
-                                    <h4 class="font-black text-slate-900 tracking-tight">Registered for ${r.title}</h4>
+                                    <h4 class="font-black text-slate-900 tracking-tight">Mission: ${r.title}</h4>
                                     <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">${r.club_name} • ${new Date(r.registered_at).toLocaleDateString()}</p>
                                 </div>
                             </div>
                             <div class="flex items-center gap-3">
-                                <span class="px-3 py-1 bg-green-50 text-green-600 rounded-lg text-[9px] font-black uppercase tracking-tighter border border-green-100">${r.status}</span>
+                                <span class="px-3 py-1 ${statusClass} rounded-lg text-[9px] font-black uppercase tracking-tighter border italic">${statusLabel}</span>
                                 <i id="chevron-${r.reg_id}" data-lucide="chevron-down" class="w-4 h-4 text-slate-300 transition-all"></i>
                             </div>
                         </div>
@@ -745,9 +797,35 @@
                                     </div>
                                     <div class="flex flex-col">
                                         <span class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">Transaction Identity</span>
-                                        <p class="text-sm font-bold text-primary">${r.razorpay_payment_id || 'FREE_REG'}</p>
+                                        <p class="text-sm font-bold text-primary">${r.razorpay_payment_id || (r.status === 'approved' ? 'FREE_REG' : 'PENDING')}</p>
                                     </div>
                                     <div class="flex flex-col">
+                                        <span class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">Team Roster</span>
+                                        <div class="flex flex-wrap gap-2 mt-2">
+                                            ${r.members.map(m => `
+                                                <div class="px-3 py-1.5 bg-white border border-slate-100 rounded-xl flex items-center gap-2 shadow-sm">
+                                                    <span class="h-2 w-2 rounded-full ${m.invite_status === 'accepted' ? 'bg-green-500' : (m.invite_status === 'rejected' ? 'bg-red-500' : 'bg-amber-400')}"></span>
+                                                    <span class="text-[9px] font-bold text-slate-600">${m.full_name}</span>
+                                                    ${m.id == r.leader_id ? '<span class="text-[7px] font-black text-indigo-500 uppercase tracking-tighter">Lead</span>' : ''}
+                                                </div>
+                                            `).join('')}
+                                        </div>
+                                    </div>
+
+                                    ${r.status === 'ready_to_pay' && r.payer_id == user.id ? `
+                                        <div class="pt-4">
+                                            <button onclick="generateTeamPayment(${r.reg_id})" class="w-full py-4 bg-primary text-white rounded-[1.5rem] text-xs font-black uppercase tracking-[0.2em] shadow-xl shadow-primary/20 hover:scale-[1.02] transition-all active:scale-95">
+                                                Complete Payment Now (₹${r.amount_paid})
+                                            </button>
+                                        </div>
+                                    ` : ''}
+
+                                    ${r.status === 'waiting_friends' ? `
+                                        <div class="p-4 bg-amber-50 border border-amber-100 rounded-2xl flex items-center gap-3">
+                                            <div class="animate-spin h-4 w-4 border-2 border-amber-500 border-t-transparent rounded-full"></div>
+                                            <p class="text-[10px] font-bold text-amber-700 italic">Waiting for all team members to accept the mission invitation...</p>
+                                        </div>
+                                    ` : ''}
                                         <span class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">Team Identity</span>
                                         <p class="text-sm font-bold text-slate-900">${r.team_name || 'Individual Entry'}</p>
                                     </div>
@@ -1699,7 +1777,7 @@
             selectedTeamMembers = [];
         }
 
-        async function submitTeamRegistration() {
+        async function submitTeamRegistration(force_clash = false) {
             if(!currentEvent) return;
 
             // Final Validation
@@ -1723,7 +1801,7 @@
                     return;
                 }
 
-                const friend_ids = selectedTeamMembers.slice(1).map(m => m.id); // Exclude self
+                const friend_ids = selectedTeamMembers.filter(m => m.id !== user.id).map(m => m.id);
                 
                 Swal.fire({ title: 'Deploying Team...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
 
@@ -1734,45 +1812,115 @@
                         event_id: currentEvent.id, 
                         friend_ids,
                         team_name: team_name,
-                        leader_id: selectedLeaderId
+                        leader_id: selectedLeaderId,
+                        force_clash_acknowledge: force_clash
                     })
                 });
 
                 const data = await res.json();
+                
+                if (res.status === 409) {
+                    // CLASH DETECTED
+                    let clashHtml = '<div class="text-left space-y-4 mt-4">';
+                    let hasSameTime = false;
+                    
+                    data.clashes.forEach(c => {
+                        if (c.clash_type === 'same_time') hasSameTime = true;
+                        const label = c.clash_type === 'same_time' ? 'SAME TIME' : 'SAME DAY';
+                        const color = c.clash_type === 'same_time' ? 'bg-red-100 text-red-600' : 'bg-amber-100 text-amber-600';
+                        
+                        clashHtml += `
+                            <div class="p-3 border rounded-xl bg-slate-50">
+                                <div class="flex items-center justify-between mb-1">
+                                    <span class="text-[8px] font-black uppercase ${color} px-2 py-0.5 rounded-md">${label}</span>
+                                    <span class="text-[9px] font-black text-slate-400 uppercase tracking-tighter">${c.reg_no}</span>
+                                </div>
+                                <p class="text-[10px] font-black text-slate-900">${c.full_name}</p>
+                                <p class="text-[9px] font-bold text-slate-500 italic mt-1">Has already registered for: ${c.event_title}</p>
+                            </div>
+                        `;
+                    });
+
+                    if (hasSameTime) {
+                        clashHtml += `
+                            <div class="flex items-start gap-3 p-4 bg-red-50 border border-red-100 rounded-2xl mt-4">
+                                <input type="checkbox" id="forceClashCheck" class="mt-1">
+                                <label for="forceClashCheck" class="text-[10px] font-bold text-red-800 leading-snug italic">
+                                    Are you sure to register this, you will miss the previous event.
+                                </label>
+                            </div>
+                        `;
+                    }
+                    clashHtml += '</div>';
+
+                    Swal.fire({
+                        title: 'Schedule Conflict',
+                        html: clashHtml,
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonText: 'Proceed Anyway',
+                        confirmButtonColor: '#1e3a8a',
+                        preConfirm: () => {
+                            if (hasSameTime && !document.getElementById('forceClashCheck').checked) {
+                                Swal.showValidationMessage('Please check the confirmation box to proceed');
+                                return false;
+                            }
+                            return true;
+                        }
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            submitTeamRegistration(true);
+                        }
+                    });
+                    return;
+                }
+
                 if(!res.ok) { Swal.fire('Mission Failed', data.error || 'Unknown error', 'error'); return; }
+
+                if (data.type === 'team_invite') {
+                    Swal.fire('Invitation Sent', 'Team registration initiated! Your friends must accept the invitation in their "Updates" section within 1 hour before you can proceed to payment.', 'success');
+                    closeModal();
+                    loadUpdates();
+                    return;
+                }
 
                 if (data.type === 'free') {
                     Swal.fire('Success!', 'Team registered successfully for free event!', 'success');
                     closeModal();
-                    loadEvents(); // Refresh buttons
+                    loadEvents();
                     return;
                 }
 
-                // Paid Workflow
+                // Paid Solo Workflow
                 Swal.close();
-                var options = {
-                    "key": data.key, "amount": data.amount * 100, "currency": "INR", "name": "CampusHub",
-                    "description": currentEvent.title, "order_id": data.order_id,
-                    "handler": async function (resp){
-                        Swal.fire({ title: 'Verifying Registration...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
-                        const verifyResp = await AuthGuard.secureFetch('/api/registrations/verify', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ razorpay_payment_id: resp.razorpay_payment_id, razorpay_order_id: resp.razorpay_order_id, razorpay_signature: resp.razorpay_signature })
-                        });
-                        if (verifyResp.ok) {
-                            Swal.fire('Success!', 'Payment verified & Team registration complete!', 'success');
-                            closeModal();
-                            loadEvents(); // Refresh buttons
-                        } else {
-                            const vd = await verifyResp.json();
-                            Swal.fire('Error', vd.error || 'Verification failed', 'error');
-                        }
-                    },
-                    "theme": { "color": "#1e3a8a" }
-                };
-                new Razorpay(options).open();
-            } catch(e) { Swal.fire('Error', 'An error occurred during submission', 'error'); }
+                startPayment(data, currentEvent);
+            } catch(e) { console.error(e); Swal.fire('Error', 'An error occurred during submission', 'error'); }
+        }
+
+        function startPayment(data, event) {
+            var options = {
+                "key": data.key, "amount": data.amount * 100, "currency": "INR", "name": "CampusHub",
+                "description": event.title, "order_id": data.order_id,
+                "handler": async function (resp){
+                    Swal.fire({ title: 'Verifying Registration...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+                    const verifyResp = await AuthGuard.secureFetch('/api/registrations/verify', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ razorpay_payment_id: resp.razorpay_payment_id, razorpay_order_id: resp.razorpay_order_id, razorpay_signature: resp.razorpay_signature })
+                    });
+                    if (verifyResp.ok) {
+                        Swal.fire('Success!', 'Payment verified & registration complete!', 'success');
+                        closeModal();
+                        loadEvents();
+                        loadUpdates();
+                    } else {
+                        const vd = await verifyResp.json();
+                        Swal.fire('Error', vd.error || 'Verification failed', 'error');
+                    }
+                },
+                "theme": { "color": "#1e3a8a" }
+            };
+            new Razorpay(options).open();
         }
 
         // Init loads
@@ -1812,6 +1960,97 @@
             } catch(e) { console.error("Completeness check failed", e); }
         }
         checkProfileCompleteness();
+
+        async function respondInvite(regId, action, force_clash = false) {
+            try {
+                Swal.fire({ title: 'Processing...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+                const res = await AuthGuard.secureFetch('/api/registrations/respond-invite', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ registration_id: regId, action: action, force_clash_acknowledge: force_clash })
+                });
+                const data = await res.json();
+                
+                if (res.status === 409) {
+                    // CLASH DETECTED for friend
+                    let clashHtml = '<div class="text-left space-y-4 mt-4">';
+                    let hasSameTime = false;
+                    data.clashes.forEach(c => {
+                        if (c.clash_type === 'same_time') hasSameTime = true;
+                        const label = c.clash_type === 'same_time' ? 'SAME TIME' : 'SAME DAY';
+                        clashHtml += `<div class="p-3 border rounded-xl bg-slate-50">
+                            <span class="text-[8px] font-black uppercase bg-amber-100 text-amber-600 px-2 py-0.5 rounded-md">${label}</span>
+                            <p class="text-[10px] font-black text-slate-900 mt-1">Clash with: ${c.event_title}</p>
+                        </div>`;
+                    });
+                    if (hasSameTime) {
+                        clashHtml += `<div class="flex items-start gap-3 p-4 bg-red-50 border border-red-100 rounded-2xl mt-4">
+                            <input type="checkbox" id="forceClashAcceptCheck" class="mt-1">
+                            <label for="forceClashAcceptCheck" class="text-[10px] font-bold text-red-800 italic">Are you sure to accept this? You will miss the previous event.</label>
+                        </div>`;
+                    }
+                    clashHtml += '</div>';
+
+                    Swal.fire({
+                        title: 'Schedule Conflict',
+                        html: clashHtml,
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonText: 'Accept Anyway',
+                        preConfirm: () => {
+                            if (hasSameTime && !document.getElementById('forceClashAcceptCheck').checked) {
+                                Swal.showValidationMessage('Check the confirmation box to proceed');
+                                return false;
+                            }
+                            return true;
+                        }
+                    }).then((result) => {
+                        if (result.isConfirmed) respondInvite(regId, action, true);
+                    });
+                    return;
+                }
+
+                if(res.ok) {
+                    Swal.fire('Success', data.message, 'success');
+                    loadUpdates();
+                    loadEvents();
+                } else {
+                    Swal.fire('Error', data.error, 'error');
+                }
+            } catch(e) { console.error(e); }
+        }
+
+        async function generateTeamPayment(regId) {
+            try {
+                Swal.fire({ title: 'Preparing Payment...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+                const res = await AuthGuard.secureFetch('/api/registrations/generate-payment', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ registration_id: regId })
+                });
+                const data = await res.json();
+                if(!res.ok) { Swal.fire('Error', data.error, 'error'); return; }
+                
+                const reg = allActivityData.find(a => a.reg_id === regId);
+                startPayment(data, { title: reg.title });
+            } catch(e) { console.error(e); }
+        }
+
+        function updateCountdowns() {
+            document.querySelectorAll('.countdown-timer').forEach(el => {
+                const expiry = new Date(el.dataset.expiry);
+                const now = new Date();
+                const diff = expiry - now;
+                if (diff <= 0) {
+                    el.innerText = "EXPIRED";
+                    el.classList.add('text-red-500');
+                    return;
+                }
+                const mins = Math.floor(diff / 60000);
+                const secs = Math.floor((diff % 60000) / 1000);
+                el.innerText = `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+            });
+        }
 
         function logout() { localStorage.clear(); window.location.href='/sign-in.html'; }
 
