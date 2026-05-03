@@ -257,6 +257,9 @@ def initiate_registration(current_user):
                         cur.execute("""
                             INSERT INTO registration_members (registration_id, student_id, invite_status, invite_expires_at)
                             VALUES (%s, %s, %s, %s)
+                            ON CONFLICT (registration_id, student_id) 
+                            DO UPDATE SET invite_status = EXCLUDED.invite_status, 
+                                          invite_expires_at = EXCLUDED.invite_expires_at
                         """, (reg_id, uid, status, expiry))
                     
                     conn.commit()
