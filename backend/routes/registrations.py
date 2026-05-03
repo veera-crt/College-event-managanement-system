@@ -23,9 +23,10 @@ def check_event_clashes(cur, student_ids, new_start, new_end, current_reg_id=Non
           AND r.status IN ('approved', 'ready_to_pay', 'waiting_friends')
           AND r.id != COALESCE(%s, -1)
           AND (
-            (e.start_date::date = %s::date)
+            (e.start_date::date = %s::date OR e.end_date::date = %s::date)
+            OR (e.start_date < %s AND e.end_date > %s)
           )
-    """, (student_ids, current_reg_id, new_start))
+    """, (student_ids, current_reg_id, new_start, new_end, new_end, new_start))
     potential_clashes = cur.fetchall()
     
     clashes = []
