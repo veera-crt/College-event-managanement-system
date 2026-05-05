@@ -382,14 +382,15 @@ def export_event_report(current_user, event_id):
 
                 cur.execute("""
                     SELECT u.full_name, u.reg_no, u.email, u.college_email, 
-                           r.status as reg_status, r.registered_at,
+                           r.status as reg_status, r.registered_at, r.team_name,
                            COALESCE(a.manual_present, FALSE) as manual_attendance,
                            COALESCE(a.otp_present, FALSE) as otp_attendance
                     FROM registrations r
-                    JOIN users u ON r.student_id = u.id
-                    LEFT JOIN attendance a ON r.event_id = a.event_id AND r.student_id = a.student_id
-                    WHERE r.event_id = %s
-                    ORDER BY u.reg_no ASC
+                    JOIN registration_members rm ON r.id = rm.registration_id
+                    JOIN users u ON rm.student_id = u.id
+                    LEFT JOIN attendance a ON r.event_id = a.event_id AND u.id = a.student_id
+                    WHERE r.event_id = %s AND r.status = 'approved'
+                    ORDER BY r.team_name ASC, u.reg_no ASC
                 """, (event_id,))
                 participants = cur.fetchall()
 
@@ -455,7 +456,7 @@ def export_event_report(current_user, event_id):
 
                 # Sheet 2: Participant Register
                 ws2 = wb.create_sheet("Participant Register")
-                headers = ['STUDENT NAME', 'REG NO', 'EMAIL', 'COLLEGE EMAIL', 'REG STATUS', 'REG DATE', 'MANUAL PRESENCE', 'OTP VERIFIED']
+                headers = ['STUDENT NAME', 'REG NO', 'EMAIL', 'COLLEGE EMAIL', 'TEAM IDENTITY', 'REG STATUS', 'REG DATE', 'MANUAL PRESENCE', 'OTP VERIFIED']
                 ws2.append(headers)
                 
                 # Style Headers
@@ -464,10 +465,11 @@ def export_event_report(current_user, event_id):
                 for cell in ws2[1]:
                     cell.fill = h_fill
                     cell.font = h_font
-
+ 
                 for p in participants:
                     ws2.append([
                         p['full_name'], p['reg_no'], p['email'], p['college_email'],
+                        p['team_name'] or "Individual",
                         p['reg_status'], p['registered_at'].replace(tzinfo=None) if p['registered_at'] else "N/A",
                         "PRESENT" if p['manual_attendance'] else "ABSENT",
                         "VERIFIED" if p['otp_attendance'] else "UNVERIFIED"
