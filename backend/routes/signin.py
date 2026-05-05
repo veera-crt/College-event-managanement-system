@@ -47,9 +47,14 @@ def login():
                     
                 # 4. Check for active club administrator if logging in as Organizer
                 if role == 'organizer':
-                    cur.execute("SELECT id FROM users WHERE role = 'admin' AND organization_name = %s", (user['organization_name'],))
+                    if user['club_id']:
+                        cur.execute("SELECT id FROM users WHERE role = 'admin' AND club_id = %s", (user['club_id'],))
+                    else:
+                        cur.execute("SELECT id FROM users WHERE role = 'admin' AND organization_name = %s", (user['organization_name'],))
+                        
                     if not cur.fetchone():
-                         return jsonify({"error": f"Access Denied: The Administrator for '{user['organization_name']}' is not active. Please contact your club head."}), 403
+                         org_name = user['organization_name'] or "your club"
+                         return jsonify({"error": f"Access Denied: The Administrator for '{org_name}' is not active. Please contact your club head."}), 403
 
                 # 5. Issue JWT and Refresh tokens (2 hour max session)
                 access_token, refresh_token = create_tokens({

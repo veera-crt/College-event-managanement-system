@@ -20,9 +20,10 @@ def get_halls(current_user):
                 
                 # 2. Fetch approved bookings from today onwards
                 cur.execute("""
-                    SELECT e.id, e.hall_id, e.title, e.start_date, e.end_date, u.organization_name as club_name
+                    SELECT e.id, e.hall_id, e.title, e.start_date, e.end_date, c.name as club_name
                     FROM events e 
                     LEFT JOIN users u ON e.organizer_id = u.id
+                    LEFT JOIN clubs c ON e.club_id = c.id
                     WHERE e.status = 'approved' 
                     AND e.end_date >= NOW()
                     ORDER BY e.start_date ASC
@@ -140,12 +141,13 @@ def get_my_events(current_user):
 
                 cur.execute("""
                     SELECT e.*, h.name as hall_name, u.full_name as organizer_name, 
-                           u.organization_name as club_name, a.full_name as approved_by_name,
+                           c.name as club_name, a.full_name as approved_by_name,
                            CASE WHEN e.end_date < (NOW() AT TIME ZONE 'UTC' + INTERVAL '5 hours 30 minutes') THEN true ELSE false END as is_past
                     FROM events e 
                     LEFT JOIN halls h ON e.hall_id = h.id
                     LEFT JOIN users u ON e.organizer_id = u.id
                     LEFT JOIN users a ON e.approved_by = a.id
+                    LEFT JOIN clubs c ON e.club_id = c.id
                     WHERE e.club_id = %s
                     ORDER BY e.created_at DESC
                 """, (club_id,))
@@ -263,12 +265,13 @@ def get_approved_events(current_user):
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
                 cur.execute("""
                     SELECT e.*, h.name as hall_name, u.full_name as organizer_name, 
-                           u.organization_name as club_name, a.full_name as approved_by_name,
+                           c.name as club_name, a.full_name as approved_by_name,
                            CASE WHEN e.end_date < (NOW() AT TIME ZONE 'UTC' + INTERVAL '5 hours 30 minutes') THEN true ELSE false END as is_past
                     FROM events e 
                     LEFT JOIN halls h ON e.hall_id = h.id
                     LEFT JOIN users u ON e.organizer_id = u.id
                     LEFT JOIN users a ON e.approved_by = a.id
+                    LEFT JOIN clubs c ON e.club_id = c.id
                     WHERE e.status = 'approved'
                     ORDER BY e.start_date ASC
                 """)
