@@ -388,18 +388,6 @@ def verify_payment(current_user):
                     WHERE id = %s
                 """, (razorpay_payment_id, razorpay_signature, reg['id']))
                 
-                # Register all members from registration_members table
-                cur.execute("SELECT student_id FROM registration_members WHERE registration_id = %s", (reg['id'],))
-                members = cur.fetchall()
-                for member in members:
-                    # Skip the primary leader row (as it was updated above)
-                    if member['student_id'] != reg['student_id']:
-                         cur.execute("""
-                            INSERT INTO registrations (event_id, student_id, status, razorpay_payment_id, amount_paid, team_name, leader_id, payer_id)
-                            VALUES (%s, %s, 'approved', %s, 0, %s, %s, %s)
-                            ON CONFLICT (event_id, student_id) DO UPDATE SET status = 'approved', razorpay_payment_id = EXCLUDED.razorpay_payment_id
-                         """, (reg['event_id'], member['student_id'], razorpay_payment_id, reg['team_name'], reg['leader_id'], reg['payer_id']))
-
                 conn.commit()
 
                 # Trigger automations for all members
@@ -653,9 +641,9 @@ def edit_team(current_user):
                 if int(reg['leader_id']) != int(current_user['sub']):
                     return jsonify({"error": "Unauthorized: Only the team leader can modify members"}), 403
                 
-                # Check for modification limit (Allowing 2 edits now)
-                if reg['edit_count'] and reg['edit_count'] >= 2:
-                    return jsonify({"error": "Edit limit (2 times) already used for this registration"}), 403
+                # Check for modification limit (Allowing 3 edits now)
+                if reg['edit_count'] and reg['edit_count'] >= 3:
+                    return jsonify({"error": "Edit limit (3 times) already used for this registration"}), 403
                 
                 # Time check
                 if reg['start_date']:
@@ -704,13 +692,13 @@ def edit_team(current_user):
                         return jsonify({"error": f"Only {spots_left} persons allowed to be added. Cannot add {len(to_add)} members."}), 400
 
                 # 6. PERFORM DATABASE UPDATES
-                # Update the primary registration record
+                # Update the primary registration record AND any duplicates (sync for legacy data)
                 cur.execute("""
                     UPDATE registrations 
                     SET leader_id = %s, 
                         edit_count = edit_count + 1 
-                    WHERE id = %s
-                """, (new_leader_id, reg_id))
+                    WHERE id = %s OR (razorpay_payment_id IS NOT NULL AND razorpay_payment_id = %s)
+                """, (new_leader_id, reg_id, reg['razorpay_payment_id']))
                 
                 # Sync registration_members table
                 # We'll just replace the roster. Since this is an 'edit' of an approved team, 
