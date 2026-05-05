@@ -174,7 +174,7 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-8" id="eventsGrid">
                     <!-- Events will be loaded dynamically -->
                 </div>
-                <div id="noEvents" class="py-20 text-center text-gray-400 font-bold italic">
+                <div id="noEvents" class="hidden py-20 text-center text-gray-400 font-bold italic">
                     <i data-lucide="calendar" class="h-10 w-10 mx-auto mb-4 opacity-20"></i>
                     No events registered yet. Browse some in the sidebar!
                 </div>
@@ -1198,6 +1198,20 @@
 
         async function loadEvents() {
             const grid = document.getElementById('eventsGrid');
+            const noEvents = document.getElementById('noEvents');
+            
+            // Show Loading State
+            noEvents.classList.add('hidden');
+            grid.innerHTML = `
+                <div class="col-span-full py-20 text-center animate-pulse">
+                    <div class="w-16 h-16 bg-slate-100 rounded-3xl mx-auto mb-6 flex items-center justify-center">
+                        <i data-lucide="loader" class="w-8 h-8 text-slate-300 animate-spin"></i>
+                    </div>
+                    <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest italic">Scanning the campus grid for missions...</p>
+                </div>
+            `;
+            lucide.createIcons();
+
             try {
                 // Fetch registrations first to show "Registered" status
                 const regRes = await AuthGuard.secureFetch('/api/registrations/my-registrations');
