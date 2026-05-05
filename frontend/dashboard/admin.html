@@ -726,18 +726,10 @@
             }
         }
 
-        let myClubs = [];
-        async function fetchMyClubs() {
-            try {
-                const res = await AuthGuard.secureFetch('/api/admin/clubs', {
-                    headers: {  }
-                });
-                myClubs = await res.json();
-            } catch(e) { console.warn("Clubs fetch failed", e); }
-        }
+        // myClubs fetching removed: backend now securely filters data via club_id
 
         async function loadPendingOrganizers() {
-            if (myClubs.length === 0) await fetchMyClubs();
+
             const tbody = document.getElementById('organizerTbody');
             tbody.innerHTML = '<tr><td colspan="5" class="py-10 text-center italic text-gray-400">Loading pending requests...</td></tr>';
             
@@ -749,8 +741,8 @@
                 
                 if(!response.ok) throw new Error(data.error || "Failed to fetch");
                 
-                // Strict filter to only this admin's clubs
-                const filteredData = data.filter(org => myClubs.includes(org.organization_name));
+                // Backend securely filters by club_id, so data is already scoped
+                const filteredData = data;
 
                 if(filteredData.length === 0) {
                     tbody.innerHTML = '<tr><td colspan="4" class="py-10 text-center italic text-gray-400 font-bold text-[#64748b]">No pending organizers for your club.</td></tr>';
@@ -782,7 +774,7 @@
         }
 
         async function loadActiveOrganizers() {
-            if (myClubs.length === 0) await fetchMyClubs();
+
             const tbody = document.getElementById('activeOrganizersTbody');
             tbody.innerHTML = '<tr><td colspan="4" class="py-10 text-center italic text-gray-400 text-sm">Loading active team...</td></tr>';
             
@@ -794,8 +786,8 @@
                 
                 if(!response.ok) throw new Error(data.error || "Failed to fetch");
                 
-                // Strict filter
-                const filteredData = data.filter(org => myClubs.includes(org.organization_name));
+                // Backend securely filters by club_id
+                const filteredData = data;
 
                 if(filteredData.length === 0) {
                     tbody.innerHTML = '<tr><td colspan="4" class="py-10 text-center italic text-gray-400 font-bold text-[#64748b]">No active members registered for your club.</td></tr>';
@@ -991,7 +983,7 @@
         }
 
         async function loadPendingEvents() {
-            if (myClubs.length === 0) await fetchMyClubs();
+
             const list = document.getElementById('approvalsList');
             const status = currentTab;
             
@@ -1004,8 +996,8 @@
                 });
                 const events = await res.json();
                 
-                // Strict filter for pending, but allow global view for approved (as originally requested for cross-club oversight)
-                const filteredEvents = status === 'pending' ? events.filter(e => myClubs.includes(e.club_name)) : events;
+                // Backend securely filters pending events by club_id
+                const filteredEvents = events;
 
                 if(res.ok) {
                     if(status === 'pending') document.getElementById('pendingCount').textContent = filteredEvents.length;
