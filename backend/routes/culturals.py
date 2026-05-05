@@ -13,16 +13,38 @@ culturals_bp = Blueprint('culturals', __name__)
 @require_auth(roles=['student', 'organizer', 'admin'])
 def get_culturals(current_user):
     try:
+        user_role = current_user.get('role')
+        user_id = int(current_user['sub'])
+        
         with DatabaseConnection() as conn:
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
-                cur.execute("""
-                    SELECT c.*, cl.name as club_name,
-                           (SELECT COUNT(*) FROM cultural_bookings WHERE cultural_id = c.id AND status = 'confirmed') as tickets_sold,
-                           EXISTS(SELECT 1 FROM cultural_bookings WHERE cultural_id = c.id AND student_id = %s AND status = 'confirmed') as user_booked
-                    FROM culturals c
-                    JOIN clubs cl ON c.club_id = cl.id
-                    ORDER BY c.event_date ASC
-                """, (int(current_user['sub']),))
+                # If user is organizer or admin, filter by their club_id
+                if user_role in ['organizer', 'admin']:
+                    cur.execute("SELECT club_id FROM users WHERE id = %s", (user_id,))
+                    user_info = cur.fetchone()
+                    if not user_info or not user_info['club_id']:
+                        return jsonify([]), 200 # No club, no culturals
+                    
+                    cur.execute("""
+                        SELECT c.*, cl.name as club_name,
+                               (SELECT COUNT(*) FROM cultural_bookings WHERE cultural_id = c.id AND status = 'confirmed') as tickets_sold,
+                               EXISTS(SELECT 1 FROM cultural_bookings WHERE cultural_id = c.id AND student_id = %s AND status = 'confirmed') as user_booked
+                        FROM culturals c
+                        JOIN clubs cl ON c.club_id = cl.id
+                        WHERE c.club_id = %s
+                        ORDER BY c.event_date ASC
+                    """, (user_id, user_info['club_id']))
+                else:
+                    # Students see all approved culturals
+                    cur.execute("""
+                        SELECT c.*, cl.name as club_name,
+                               (SELECT COUNT(*) FROM cultural_bookings WHERE cultural_id = c.id AND status = 'confirmed') as tickets_sold,
+                               EXISTS(SELECT 1 FROM cultural_bookings WHERE cultural_id = c.id AND student_id = %s AND status = 'confirmed') as user_booked
+                        FROM culturals c
+                        JOIN clubs cl ON c.club_id = cl.id
+                        ORDER BY c.event_date ASC
+                    """, (user_id,))
+                
                 return jsonify(cur.fetchall()), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -84,9 +106,15 @@ def update_tickets(current_user):
     try:
         with DatabaseConnection() as conn:
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
-                cur.execute("SELECT total_tickets, available_tickets FROM culturals WHERE id = %s", (cultural_id,))
+                cur.execute("SELECT club_id, total_tickets, available_tickets FROM culturals WHERE id = %s", (cultural_id,))
                 cult = cur.fetchone()
                 if not cult: return jsonify({"error": "Cultural unit not found"}), 404
+                
+                # Permission check
+                cur.execute("SELECT club_id FROM users WHERE id = %s", (int(current_user['sub']),))
+                user = cur.fetchone()
+                if not user or user['club_id'] != cult['club_id']:
+                    return jsonify({"error": "Unauthorized"}), 403
                 
                 if new_total < cult['total_tickets']:
                     return jsonify({"error": "Ticket quantity can only be increased, not decreased."}), 400
@@ -295,7 +323,7 @@ def delete_cultural(current_user, cultural_id):
                 # Check if current user is admin of the same organization or the organizer of the same club
                 # For admin, we should check organization_name/club_id match if we want to be strict, 
                 # but standard practice in this app seems to be global admin or club-based organizer.
-                if current_user['role'] == 'organizer':
+                if current_user['role'] in ['organizer', 'admin']:
                      cur.execute("SELECT club_id FROM users WHERE id = %s", (int(current_user['sub']),))
                      user_club = cur.fetchone()
                      if not user_club or user_club['club_id'] != cult['club_id']:
@@ -349,8 +377,9 @@ def export_cultural_bookings(current_user, cultural_id):
                 cult = cur.fetchone()
                 if not cult: return jsonify({"error": "Event not found"}), 404
                 
-                if current_user['role'] == 'organizer' and str(cult['club_id']) != str(current_user.get('club_id')):
-                    return jsonify({"error": "Unauthorized"}), 403
+                if current_user['role'] in ['organizer', 'admin']:
+                    if str(cult['club_id']) != str(current_user.get('club_id')):
+                        return jsonify({"error": "Unauthorized"}), 403
 
                 cur.execute("""
                     SELECT u.full_name, u.reg_no, u.email, u.college_email, 

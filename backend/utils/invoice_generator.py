@@ -314,6 +314,8 @@ def send_combined_email(student_name, emails, event_name, file_paths):
         server.send_message(msg)
         server.quit()
         print("Unified confirmation email sent.")
+    except Exception as e: print(f"Combined Email Failed: {e}")
+
 def generate_and_send_event_ticket(student_name, student_emails, event_name, club_name, amount, payment_id, date, reg_no, venue, send_email=True):
     if isinstance(student_emails, str): emails = [student_emails]
     else: emails = [e for e in student_emails if e and '@' in e]
