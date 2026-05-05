@@ -44,13 +44,21 @@ def send_otp():
                 # 2. Role-Based Club Constraints
                 if role == 'admin' and org_name:
                     # Constraint: Only one admin per club
-                    cur.execute("SELECT id FROM users WHERE role = 'admin' AND organization_name = %s", (org_name,))
+                    cur.execute("""
+                        SELECT u.id FROM users u
+                        LEFT JOIN clubs c ON u.club_id = c.id
+                        WHERE u.role = 'admin' AND (u.organization_name = %s OR c.name = %s)
+                    """, (org_name, org_name))
                     if cur.fetchone():
                         return jsonify({"error": f"Access Denied: An Administrator for '{org_name}' has already been registered."}), 403
 
                 elif role == 'organizer' and org_name:
                     # Constraint: Club admin must exist
-                    cur.execute("SELECT id FROM users WHERE role = 'admin' AND organization_name = %s", (org_name,))
+                    cur.execute("""
+                        SELECT u.id FROM users u
+                        LEFT JOIN clubs c ON u.club_id = c.id
+                        WHERE u.role = 'admin' AND (u.organization_name = %s OR c.name = %s)
+                    """, (org_name, org_name))
                     if not cur.fetchone():
                         return jsonify({"error": f"Registration Denied: No Administrator found for '{org_name}'. Please contact your club head to register as Admin first."}), 403
 
