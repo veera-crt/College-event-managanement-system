@@ -25,6 +25,18 @@
                     fontFamily: {
                         sans: ['Inter', 'sans-serif'],
                     },
+                    animation: {
+                        blob: "blob 7s infinite",
+                        pulse_slow: "pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite",
+                    },
+                    keyframes: {
+                        blob: {
+                            "0%": { transform: "translate(0px, 0px) scale(1)" },
+                            "33%": { transform: "translate(30px, -50px) scale(1.1)" },
+                            "66%": { transform: "translate(-20px, 20px) scale(0.9)" },
+                            "100%": { transform: "translate(0px, 0px) scale(1)" }
+                        }
+                    }
                 }
             }
         }
@@ -43,6 +55,8 @@
         .animate-marquee:hover {
             animation-play-state: paused;
         }
+        .animation-delay-2000 { animation-delay: 2s; }
+        .animation-delay-4000 { animation-delay: 4s; }
     </style>
     <script>
         // Global Session Check: Auto-redirect logged-in users to their dashboard
@@ -100,12 +114,21 @@
             </div>
 
             <div class="relative flex flex-col items-center justify-center p-8 lg:p-0">
-                <div class="absolute inset-0 z-0 bg-blue-100/50 blur-[120px]"></div>
-                <div class="relative z-10 w-full overflow-hidden rounded-[3rem] border-8 border-white bg-[#f8fafc] shadow-2xl group">
-                    <div class="flex min-h-[450px] items-center overflow-hidden w-full relative" id="heroMarqueeContainer">
-                        <!-- Marquee Content -->
-                        <div class="flex w-max animate-marquee items-center gap-6 px-6" id="heroMarquee">
-                            <!-- JS will dynamically inject recent event posters here from the DB. -->
+                <!-- Animated Background Blobs -->
+                <div class="absolute top-0 -left-4 h-72 w-72 bg-blue-300 rounded-full mix-blend-multiply filter blur-2xl opacity-70 animate-blob"></div>
+                <div class="absolute top-0 -right-4 h-72 w-72 bg-purple-300 rounded-full mix-blend-multiply filter blur-2xl opacity-70 animate-blob animation-delay-2000"></div>
+                <div class="absolute -bottom-8 left-20 h-72 w-72 bg-pink-300 rounded-full mix-blend-multiply filter blur-2xl opacity-70 animate-blob animation-delay-4000"></div>
+                
+                <div class="relative z-10 w-full overflow-hidden rounded-[3rem] border border-white/40 bg-white/60 backdrop-blur-3xl shadow-2xl group min-h-[450px]">
+                    <div class="flex h-full min-h-[450px] w-full items-center overflow-hidden relative" id="heroMarqueeContainer">
+                        <!-- Premium Default State shown before JS or if no events -->
+                        <div class="flex flex-col items-center justify-center w-full h-full p-12 text-center absolute inset-0 bg-gradient-to-br from-white/40 to-white/10 backdrop-blur-sm z-0">
+                            <div class="relative mb-8">
+                                <div class="absolute inset-0 bg-primary blur-2xl opacity-20 animate-pulse_slow rounded-full"></div>
+                                <div class="relative flex h-24 w-24 items-center justify-center rounded-3xl bg-gradient-to-br from-primary to-blue-600 text-white font-black text-5xl italic shadow-xl shadow-blue-500/30 transform transition-transform hover:scale-105 hover:rotate-3 duration-300">A</div>
+                            </div>
+                            <h3 class="text-2xl font-black text-primary tracking-tight mb-2">CampusHub is Live</h3>
+                            <p class="text-gray-500 font-medium max-w-xs">Connecting students with world-class campus experiences.</p>
                         </div>
                     </div>
                 </div>
@@ -199,15 +222,12 @@
                                 </div>`;
                             });
                             
-                            // Duplicate for seamless loop
-                            marquee.innerHTML = imagesHTML + imagesHTML;
-                        } else {
-                            // No posters available, show a nice default state
-                            container.innerHTML = `<div class="flex flex-col items-center justify-center w-full h-full opacity-50">
-                                <div class="flex h-20 w-20 items-center justify-center rounded-2xl bg-primary text-white font-black text-4xl italic mb-4">A</div>
-                                <p class="text-gray-500 font-bold tracking-widest uppercase">Stay Tuned For Events</p>
+                            // Rebuild the marquee container with the fetched images
+                            container.innerHTML = `<div class="flex w-max animate-marquee items-center gap-6 px-6" id="heroMarquee">
+                                ${imagesHTML + imagesHTML}
                             </div>`;
                         }
+                        // If no posters, we do nothing. The HTML default beautiful state will remain.
                     }
                 }
             } catch (e) {
