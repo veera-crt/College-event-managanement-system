@@ -153,7 +153,7 @@ def initiate_registration(current_user):
                 # Fetch Event details
                 cur.execute("""
                     SELECT e.title, e.reg_amount, e.club_id, e.female_mandatory, e.min_team_size, e.team_size as max_team_size,
-                           e.reg_deadline, e.start_date, e.end_date, e.hall_id,
+                           e.reg_deadline, e.start_date, e.end_date, e.hall_id, e.status,
                            c.razorpay_key_id, c.razorpay_key_secret,
                            h.capacity as hall_capacity
                     FROM events e
@@ -164,11 +164,24 @@ def initiate_registration(current_user):
                 event = cur.fetchone()
                 if not event: return jsonify({"error": "Event not found"}), 404
 
-                now = datetime.now()
+                # Consistent 'now' in IST (UTC+5:30)
+                now = datetime.utcnow() + timedelta(hours=5, minutes=30)
+                # Mandatory validations for registration flow
+                if event['status'] != 'approved':
+                    return jsonify({"error": "This event is not open for registration"}), 400
+                
                 if event['end_date'] and now > event['end_date']:
                     return jsonify({"error": "Cannot register for a past event"}), 400
+                    
+                if event['start_date'] and now > event['start_date']:
+                    return jsonify({"error": "Cannot register for an event that has already started"}), 400
+
                 if event['reg_deadline'] and now > event['reg_deadline']:
                     return jsonify({"error": "Registration deadline reached"}), 400
+
+                # Safeguard: Even if UI allows, restrict if reg_deadline > start_date
+                if event['reg_deadline'] and event['start_date'] and event['reg_deadline'] > event['start_date']:
+                    return jsonify({"error": "Registration for this event is restricted due to invalid deadline configuration."}), 400
 
                 # 3. Team Size Validation
                 team_count = len(all_member_ids)
@@ -251,7 +264,9 @@ def initiate_registration(current_user):
                     """, (event_id, target_leader_id, reg_amount, team_name, target_leader_id, student_id))
                     reg_id = cur.fetchone()['id']
                     
-                    expiry = datetime.now() + timedelta(hours=1)
+                    # Consistent 'now' in IST (UTC+5:30)
+                    now_ist = datetime.utcnow() + timedelta(hours=5, minutes=30)
+                    expiry = now_ist + timedelta(hours=1)
                     for uid in all_member_ids:
                         status = 'accepted' if uid == student_id else 'pending'
                         cur.execute("""
@@ -444,8 +459,22 @@ def respond_invite(current_user):
                 """, (reg_id, student_id))
                 invite = cur.fetchone()
                 if not invite: return jsonify({"error": "Invitation not found"}), 404
+                # Consistent 'now' in IST (UTC+5:30)
+                now = datetime.utcnow() + timedelta(hours=5, minutes=30)
+                
                 if invite['invite_status'] != 'pending': return jsonify({"error": "Invitation already processed"}), 400
-                if invite['invite_expires_at'] < datetime.now(): return jsonify({"error": "Invitation expired"}), 400
+                if invite['invite_expires_at'] < now: return jsonify({"error": "Invitation expired"}), 400
+                
+                # Mandatory validations: Prevent joining if event started or deadline passed
+                if invite['start_date'] and now > invite['start_date']:
+                    return jsonify({"error": "Cannot join an event that has already started"}), 400
+                
+                # Check for registration deadline (extra safety)
+                # We fetch reg_deadline for this check
+                cur.execute("SELECT reg_deadline FROM events WHERE id = %s", (invite['event_id'],))
+                ev_meta = cur.fetchone()
+                if ev_meta and ev_meta['reg_deadline'] and now > ev_meta['reg_deadline']:
+                    return jsonify({"error": "The registration deadline for this event has passed. You cannot accept this invitation now."}), 400
 
                 if action == 'accepted':
                     clashes = check_event_clashes(cur, [student_id], invite['start_date'], invite['end_date'], current_reg_id=reg_id)
@@ -495,6 +524,18 @@ def generate_payment(current_user):
                 """, (reg_id, student_id))
                 reg = cur.fetchone()
                 if not reg: return jsonify({"error": "Registration not ready for payment or unauthorized"}), 400
+
+                # Consistent 'now' in IST (UTC+5:30)
+                now = datetime.utcnow() + timedelta(hours=5, minutes=30)
+                
+                # Re-validate time constraints before generating payment
+                cur.execute("SELECT start_date, reg_deadline FROM events WHERE id = %s", (reg['event_id'],))
+                ev = cur.fetchone()
+                if ev:
+                    if ev['start_date'] and now > ev['start_date']:
+                        return jsonify({"error": "Cannot proceed to payment as the event has already started."}), 400
+                    if ev['reg_deadline'] and now > ev['reg_deadline']:
+                        return jsonify({"error": "Cannot proceed to payment as the registration deadline has passed."}), 400
 
                 client = razorpay.Client(auth=(decrypt_data(reg['razorpay_key_id']), decrypt_data(reg['razorpay_key_secret'])))
                 order = client.order.create(dict(amount=int(float(reg['amount_paid']) * 100), currency='INR', receipt=f"team_{reg['event_id']}_{student_id}"))
@@ -594,7 +635,8 @@ def edit_team(current_user):
                 # Time check
                 if reg['start_date']:
                     from datetime import timedelta
-                    if datetime.now() > reg['start_date'] - timedelta(hours=7):
+                    now = datetime.utcnow() + timedelta(hours=5, minutes=30)
+                    if now > reg['start_date'] - timedelta(hours=7):
                         return jsonify({"error": "Modification window closed (Must edit 7+ hours before event)"}), 400
 
                 new_leader_id = int(data.get('new_leader_id')) if data.get('new_leader_id') else int(reg['leader_id'])

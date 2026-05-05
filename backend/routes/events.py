@@ -2,7 +2,7 @@ from flask import Blueprint, request, jsonify
 from utils.auth_utils import require_auth
 from db import DatabaseConnection
 from psycopg2.extras import RealDictCursor
-from datetime import datetime
+from datetime import datetime, timedelta
 import json
 
 events_bp = Blueprint('events', __name__)
@@ -74,21 +74,23 @@ def create_event(current_user):
 
         # Date Validation
         try:
-            now = datetime.now()
-            dt_start = datetime.fromisoformat(start_date)
-            dt_end = datetime.fromisoformat(end_date)
-            dt_reg = datetime.fromisoformat(reg_deadline)
+            # Consistent 'now' in IST (UTC+5:30)
+            now = datetime.utcnow() + timedelta(hours=5, minutes=30)
+            
+            dt_start = datetime.fromisoformat(start_date.replace('Z', ''))
+            dt_end = datetime.fromisoformat(end_date.replace('Z', ''))
+            dt_reg = datetime.fromisoformat(reg_deadline.replace('Z', ''))
             
             if dt_start < now:
                 return jsonify({"error": "Start date cannot be in the past"}), 400
             if dt_end <= dt_start:
                 return jsonify({"error": "End date must be after start date"}), 400
             if dt_reg >= dt_start:
-                return jsonify({"error": "Registration deadline must be before start date"}), 400
+                return jsonify({"error": "Registration deadline must be before the event start date"}), 400
             if dt_reg < now:
                 return jsonify({"error": "Registration deadline cannot be in the past"}), 400
-        except ValueError:
-            return jsonify({"error": "Invalid date format"}), 400
+        except (ValueError, TypeError):
+            return jsonify({"error": "Invalid date format or missing dates"}), 400
 
         with DatabaseConnection() as conn:
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
@@ -203,17 +205,19 @@ def update_event(current_user, event_id):
 
                 # Date Validation
                 try:
-                    now = datetime.now()
-                    dt_start = datetime.fromisoformat(start_date)
-                    dt_end = datetime.fromisoformat(end_date)
-                    dt_reg = datetime.fromisoformat(reg_deadline)
+                    # Consistent 'now' in IST (UTC+5:30)
+                    now = datetime.utcnow() + timedelta(hours=5, minutes=30)
+                    
+                    dt_start = datetime.fromisoformat(start_date.replace('Z', ''))
+                    dt_end = datetime.fromisoformat(end_date.replace('Z', ''))
+                    dt_reg = datetime.fromisoformat(reg_deadline.replace('Z', ''))
                     
                     if dt_start < now:
                         return jsonify({"error": "Start date cannot be in the past"}), 400
                     if dt_end <= dt_start:
                         return jsonify({"error": "End date must be after start date"}), 400
                     if dt_reg >= dt_start:
-                        return jsonify({"error": "Registration deadline must be before start date"}), 400
+                        return jsonify({"error": "Registration deadline must be before the event start date"}), 400
                     if dt_reg < now:
                         return jsonify({"error": "Registration deadline cannot be in the past"}), 400
                 except (ValueError, TypeError):

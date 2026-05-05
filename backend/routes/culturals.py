@@ -43,7 +43,8 @@ def create_cultural(current_user):
             
             event_date = datetime.fromisoformat(e_str)
             booking_deadline = datetime.fromisoformat(b_str)
-            now = datetime.now()
+            # Consistent 'now' in IST (UTC+5:30)
+            now = datetime.utcnow() + timedelta(hours=5, minutes=30)
             
             if event_date < now:
                 return jsonify({"error": "Event date cannot be in the past"}), 400
@@ -122,7 +123,8 @@ def book_ticket(current_user):
                 if not cult: return jsonify({"error": "Cultural unit not found"}), 404
                 
                 # 3. Check Deadline
-                now = datetime.now()
+                # Consistent 'now' in IST (UTC+5:30)
+                now = datetime.utcnow() + timedelta(hours=5, minutes=30)
                 if cult['event_date'] and now > cult['event_date']:
                     return jsonify({"error": "Cannot book a ticket for a past event."}), 400
                 if cult['booking_deadline'] and now > cult['booking_deadline']:
@@ -401,7 +403,8 @@ def export_cultural_bookings(current_user, cultural_id):
                 
                 # Sanitize filename for headers
                 clean_title = "".join(c for c in (cult['title'] or str(cultural_id)) if c.isalnum() or c in (' ', '_')).replace(' ', '_')
-                filename = f"Attendees_{clean_title}_{datetime.now().strftime('%Y%m%d')}.xlsx"
+                now_ist = datetime.utcnow() + timedelta(hours=5, minutes=30)
+                filename = f"Attendees_{clean_title}_{now_ist.strftime('%Y%m%d')}.xlsx"
 
                 return send_file(
                     file_stream,

@@ -460,7 +460,9 @@
                     const now = new Date();
                     grid.innerHTML = data.map(c => {
                         const deadline = new Date(c.booking_deadline);
+                        const eventDate = new Date(c.event_date);
                         const isExpired = now > deadline;
+                        const isEventPast = now > eventDate;
                         return `
                         <div class="bg-white rounded-[2rem] border border-slate-100 p-8 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all group flex flex-col justify-between">
                             <div>
@@ -500,9 +502,9 @@
                                     <p class="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-1">Ticket Price</p>
                                     <p class="text-lg font-black text-slate-900">${c.price > 0 ? '₹' + c.price : 'FREE'}</p>
                                 </div>
-                                <button onclick="bookCulturalTicket(${c.id}, ${c.price})" 
-                                    class="px-6 py-3 bg-primary hover:bg-black text-white rounded-xl font-black text-[10px] uppercase tracking-widest transition-all shadow-lg shadow-blue-900/10">
-                                    Book Ticket
+                                <button onclick="${!isExpired && !isEventPast && c.available_tickets > 0 ? `bookCulturalTicket(${c.id}, ${c.price})` : 'void(0)'}" 
+                                    class="px-6 py-3 ${(!isExpired && !isEventPast && c.available_tickets > 0) ? 'bg-primary hover:bg-black text-white shadow-blue-900/10' : 'bg-slate-100 text-slate-400 cursor-not-allowed'} rounded-xl font-black text-[10px] uppercase tracking-widest transition-all shadow-lg">
+                                    ${isEventPast ? 'Event Past' : (isExpired ? 'Closed' : (c.available_tickets > 0 ? 'Book Ticket' : 'Sold Out'))}
                                 </button>
                              </div>
                          </div>
@@ -1376,6 +1378,10 @@
                                             <div class="h-12 w-12 bg-emerald-500 text-white rounded-2xl shadow-lg shadow-emerald-200 flex items-center justify-center transition-all animate-in zoom-in" title="Already Registered">
                                                 <i data-lucide="check" class="w-6 h-6"></i>
                                             </div>
+                                        ` : (new Date(e.reg_deadline) < new Date() || new Date(e.start_date) < new Date()) ? `
+                                            <button disabled class="px-8 h-12 bg-slate-100 text-slate-400 rounded-2xl font-black text-[10px] uppercase tracking-widest cursor-not-allowed">
+                                                Registration Closed
+                                            </button>
                                         ` : `
                                             <button onclick="initiateRegistration(${e.id})" class="px-8 h-12 bg-primary text-white rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl shadow-blue-900/10 hover:-translate-y-0.5 transition-all">
                                                 Register Mission
