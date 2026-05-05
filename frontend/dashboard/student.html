@@ -1295,7 +1295,7 @@
                              <div class="absolute top-4 left-4">
                                 <div class="px-3 py-1.5 bg-white/20 backdrop-blur-xl rounded-xl border border-white/20 shadow-xl">
                                     <p class="text-[7px] font-black uppercase text-white tracking-widest mb-0.5 opacity-80">Application Deadline</p>
-                                    <p class="text-[11px] font-black text-white">${new Date(e.reg_deadline).toLocaleDateString([], {day:'2-digit', month:'short'})}</p>
+                                    <p class="text-[11px] font-black text-white">${new Date(e.reg_deadline).toLocaleString([], {day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit'})}</p>
                                 </div>
                              </div>
 
