@@ -547,7 +547,7 @@
                                 <div class="space-y-2 mb-6 text-[10px] font-bold text-slate-500">
                                     <p class="flex items-center gap-2"><i data-lucide="map-pin" class="w-3 h-3 text-slate-300"></i> ${c.venue}</p>
                                     <p class="flex items-center gap-2"><i data-lucide="clock" class="w-3 h-3 text-slate-300"></i> <span class="text-slate-900">${new Date(c.event_date).toLocaleString([], {day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit'})}</span></p>
-                                    <p class="flex items-center gap-2"><i data-lucide="alert-circle" class="w-3 h-3 text-amber-500"></i> Deadline: <span class="text-amber-600">${new Date(c.booking_deadline).toLocaleString([], {day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit'})}</span></p>
+                                    <p class="flex items-center gap-2"><i data-lucide="alert-circle" class="w-3 h-3 text-amber-500"></i> Booking Deadline: <span class="text-amber-600">${new Date(c.booking_deadline).toLocaleString([], {day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit'})}</span></p>
                                     <p class="flex items-center gap-2"><i data-lucide="ticket" class="w-3 h-3 text-emerald-400"></i> ${c.available_tickets} / ${c.total_tickets} Tickets Left</p>
                                 </div>
                             </div>
