@@ -45,7 +45,12 @@ def get_culturals(current_user):
                         ORDER BY c.event_date ASC
                     """, (user_id,))
                 
-                return jsonify(cur.fetchall()), 200
+                results = cur.fetchall()
+                for c in results:
+                    if c['event_date']: c['event_date'] = c['event_date'].isoformat()
+                    if c['booking_deadline']: c['booking_deadline'] = c['booking_deadline'].isoformat()
+                
+                return jsonify(results), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
@@ -90,7 +95,7 @@ def create_cultural(current_user):
                     INSERT INTO culturals (title, description, price, total_tickets, available_tickets, event_date, booking_deadline, venue, club_id, template_id)
                     VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                     RETURNING id
-                """, (data['title'], data.get('description'), data['price'], data['total_tickets'], data['total_tickets'], data.get('event_date'), data.get('booking_deadline'), data.get('venue'), user['club_id'], data.get('template_id', 'classic_purple')))
+                """, (data['title'], data.get('description'), data['price'], data['total_tickets'], data['total_tickets'], event_date, booking_deadline, data.get('venue'), user['club_id'], data.get('template_id', 'classic_purple')))
                 conn.commit()
                 return jsonify({"message": "Cultural unit created successfully"}), 201
     except Exception as e:
@@ -179,14 +184,18 @@ def book_ticket(current_user):
                     cur.execute("SELECT full_name, email, college_email, reg_no FROM users WHERE id = %s", (student_id,))
                     u = cur.fetchone()
                     # Generate Both: Ticket and Invoice
+                    # Ensure event_date is formatted if it's a datetime object
+                    e_date = cult['event_date']
+                    if hasattr(e_date, 'isoformat'): e_date = e_date.isoformat()
+
                     ticket_path = generate_and_send_cultural_ticket(
                         u['full_name'], [u['email'], u['college_email']], cult['title'], cult['club_name'], 0, f"CULT-{recorded_booking_id}", 
-                        (datetime.utcnow() + timedelta(hours=5, minutes=30)).strftime("%Y-%m-%d %H:%M"), u['reg_no'], cult['venue'], cult.get('template_id', 'classic_purple'),
+                        e_date, u['reg_no'], cult['venue'], cult.get('template_id', 'classic_purple'),
                         send_email=False 
                     )
                     invoice_path = generate_and_send_invoice(
                         u['full_name'], [u['email'], u['college_email']], cult['title'], cult['club_name'], 0, "FREE_CULT", 
-                        (datetime.utcnow() + timedelta(hours=5, minutes=30)).strftime("%Y-%m-%d %H:%M"), u['reg_no'], send_email=False
+                        e_date, u['reg_no'], send_email=False
                     )
 
                     # Send Unified Email
@@ -230,7 +239,7 @@ def verify_booking(current_user):
         with DatabaseConnection() as conn:
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
                 cur.execute("""
-                    SELECT cb.*, c.title, c.venue, c.club_id, c.template_id, cl.name as club_name, cl.razorpay_key_id, cl.razorpay_key_secret,
+                    SELECT cb.*, c.title, c.venue, c.club_id, c.template_id, c.event_date, cl.name as club_name, cl.razorpay_key_id, cl.razorpay_key_secret,
                            u.full_name, u.email, u.college_email, u.reg_no
                     FROM cultural_bookings cb
                     JOIN culturals c ON cb.cultural_id = c.id
@@ -266,14 +275,17 @@ def verify_booking(current_user):
                 ticket_str = f"CULT-{booking['id']}"
                 cur.execute("UPDATE cultural_bookings SET ticket_id = %s WHERE id = %s", (ticket_str, booking['id']))
                 
+                e_date = booking['event_date']
+                if hasattr(e_date, 'isoformat'): e_date = e_date.isoformat()
+
                 ticket_path = generate_and_send_cultural_ticket(
                     booking['full_name'], [booking['email'], booking['college_email']], booking['title'], booking['club_name'], 
-                    booking['amount_paid'], ticket_str, (datetime.utcnow() + timedelta(hours=5, minutes=30)).strftime("%Y-%m-%d %H:%M"), booking['reg_no'], booking['venue'], booking.get('template_id', 'classic_purple'),
+                    booking['amount_paid'], ticket_str, e_date, booking['reg_no'], booking['venue'], booking.get('template_id', 'classic_purple'),
                     send_email=False
                 )
                 invoice_path = generate_and_send_invoice(
                     booking['full_name'], [booking['email'], booking['college_email']], booking['title'], booking['club_name'], 
-                    booking['amount_paid'], razorpay_payment_id, (datetime.utcnow() + timedelta(hours=5, minutes=30)).strftime("%Y-%m-%d %H:%M"), booking['reg_no'], send_email=False
+                    booking['amount_paid'], razorpay_payment_id, e_date, booking['reg_no'], send_email=False
                 )
 
                 from utils.invoice_generator import send_combined_email
