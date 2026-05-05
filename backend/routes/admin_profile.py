@@ -14,7 +14,7 @@ def get_admin_profile(current_user):
         with DatabaseConnection() as conn:
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
                 cur.execute("""
-                    SELECT u.id, u.full_name, u.email, u.role, u.organization_name, u.club_id, 
+                    SELECT u.id, u.full_name, u.email, u.role, c.name as organization_name, u.club_id, 
                            c.name as club_name, c.razorpay_key_id, c.razorpay_key_secret
                     FROM users u 
                     LEFT JOIN clubs c ON u.club_id = c.id
@@ -50,9 +50,9 @@ def update_admin_profile(current_user):
             with conn.cursor() as cur:
                 cur.execute("""
                     UPDATE users 
-                    SET full_name = %s, organization_name = %s 
+                    SET full_name = %s
                     WHERE id = %s AND role = 'admin'
-                """, (full_name, org_name, current_user['sub']))
+                """, (full_name, current_user['sub']))
                 conn.commit()
                 return jsonify({"message": "Admin profile updated"}), 200
     except Exception as e:

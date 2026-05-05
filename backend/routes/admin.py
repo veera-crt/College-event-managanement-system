@@ -24,12 +24,13 @@ def get_pending_organizers(current_user):
         with DatabaseConnection() as conn:
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
                 cur.execute("""
-                    SELECT id, full_name, email, reg_no, phone_number, organization_name, dob, address, created_at
-                    FROM users 
-                    WHERE role = 'organizer' 
-                    AND account_status = 'pending'
-                    AND club_id = %s 
-                    ORDER BY created_at DESC
+                    SELECT u.id, u.full_name, u.email, u.reg_no, u.phone_number, c.name as organization_name, u.dob, u.address, u.created_at
+                    FROM users u
+                    LEFT JOIN clubs c ON u.club_id = c.id
+                    WHERE u.role = 'organizer' 
+                    AND u.account_status = 'pending'
+                    AND u.club_id = %s 
+                    ORDER BY u.created_at DESC
                 """, (club_id,))
                 organizers = cur.fetchall()
                 
@@ -59,12 +60,13 @@ def get_active_organizers(current_user):
         with DatabaseConnection() as conn:
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
                 cur.execute("""
-                    SELECT id, full_name, email, reg_no, phone_number, organization_name, created_at
-                    FROM users 
-                    WHERE role = 'organizer' 
-                    AND account_status = 'active'
-                    AND club_id = %s 
-                    ORDER BY full_name ASC
+                    SELECT u.id, u.full_name, u.email, u.reg_no, u.phone_number, c.name as organization_name, u.created_at
+                    FROM users u
+                    LEFT JOIN clubs c ON u.club_id = c.id
+                    WHERE u.role = 'organizer' 
+                    AND u.account_status = 'active'
+                    AND u.club_id = %s 
+                    ORDER BY u.full_name ASC
                 """, (club_id,))
                 organizers = cur.fetchall()
                 
@@ -103,17 +105,22 @@ def process_organizer(current_user, user_id, action):
                     WHERE id = %s 
                     AND role = 'organizer' 
                     AND club_id = %s 
-                    RETURNING id, email, full_name, organization_name
+                    RETURNING id, email, full_name, club_id
                 """, (new_status, user_id, club_id))
                 
                 updated = cur.fetchone()
                 
                 if not updated:
                     return jsonify({"error": "Organizer not found or belongs to another organization"}), 404
+                    
+                # Get the actual club name safely
+                cur.execute("SELECT name FROM clubs WHERE id = %s", (updated['club_id'],))
+                club_row = cur.fetchone()
+                club_name_actual = club_row['name'] if club_row else 'Unknown Club'
                 
                 # Send Notification Email
                 from utils.email_utils import send_organizer_status_email
-                send_organizer_status_email(updated['email'], updated['full_name'], new_status, updated['organization_name'])
+                send_organizer_status_email(updated['email'], updated['full_name'], new_status, club_name_actual)
                     
                 conn.commit()
                 return jsonify({"message": f"Organizer successfully {new_status}"}), 200
@@ -134,10 +141,11 @@ def get_pending_events(current_user):
         with DatabaseConnection() as conn:
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
                 cur.execute("""
-                    SELECT e.*, h.name as hall_name, u.full_name as organizer_name, u.organization_name as club_name
+                    SELECT e.*, h.name as hall_name, u.full_name as organizer_name, c.name as club_name
                     FROM events e 
                     LEFT JOIN halls h ON e.hall_id = h.id
                     LEFT JOIN users u ON e.organizer_id = u.id
+                    LEFT JOIN clubs c ON e.club_id = c.id
                     WHERE e.status = 'pending'
                     AND e.club_id = %s 
                     ORDER BY e.created_at ASC
@@ -206,11 +214,12 @@ def get_approved_events_for_admin(current_user):
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
                 cur.execute("""
                     SELECT e.*, h.name as hall_name, u.full_name as organizer_name, 
-                           u.organization_name as club_name, a.full_name as approved_by_name
+                           c.name as club_name, a.full_name as approved_by_name
                     FROM events e 
                     LEFT JOIN halls h ON e.hall_id = h.id
                     LEFT JOIN users u ON e.organizer_id = u.id
                     LEFT JOIN users a ON e.approved_by = a.id
+                    LEFT JOIN clubs c ON e.club_id = c.id
                     WHERE e.status = 'approved'
                     AND e.club_id = %s 
                     ORDER BY e.start_date ASC

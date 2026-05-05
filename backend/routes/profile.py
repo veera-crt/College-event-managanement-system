@@ -17,8 +17,10 @@ def get_profile(current_user):
         with DatabaseConnection() as conn:
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
                 cur.execute("""
-                    SELECT id, full_name, email, reg_no, phone_number, address, dob, department, college_email, organization_name 
-                    FROM users WHERE id = %s
+                    SELECT u.id, u.full_name, u.email, u.reg_no, u.phone_number, u.address, u.dob, u.department, u.college_email, c.name as organization_name 
+                    FROM users u
+                    LEFT JOIN clubs c ON u.club_id = c.id 
+                    WHERE u.id = %s
                 """, (current_user['sub'],))
                 user_data = cur.fetchone()
                 
