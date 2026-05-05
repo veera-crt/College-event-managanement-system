@@ -746,7 +746,7 @@
                     // Registration Card Logic
                     const eventDate = new Date(r.start_date);
                     const isWithinWindow = r.start_date && (new Date(r.start_date) - new Date() > 7 * 60 * 60 * 1000);
-                    const canEdit = r.edit_count < 2 && isWithinWindow && r.status === 'approved';
+                    const canEdit = r.edit_count < 3 && isWithinWindow && r.status === 'approved';
 
                     let statusLabel = r.status;
                     let statusClass = 'bg-blue-50 text-blue-600 border-blue-100';
