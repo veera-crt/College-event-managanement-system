@@ -625,7 +625,7 @@ def edit_team(current_user):
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
                 # 1. Fetch current registration & event time
                 cur.execute("""
-                    SELECT r.id, r.student_id, r.leader_id, r.payer_id, r.event_id, r.team_name, r.amount_paid, r.edit_count, 
+                    SELECT r.id, r.student_id, r.leader_id, r.payer_id, r.event_id, r.team_name, r.amount_paid, r.edit_count, r.razorpay_payment_id,
                            e.start_date, e.min_team_size, e.team_size as max_team_size,
                            h.capacity as hall_capacity
                     FROM registrations r
