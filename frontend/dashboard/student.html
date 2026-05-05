@@ -1360,6 +1360,24 @@
                                 <div id="brief-${e.id}" class="hidden animate-in">
                                      <div class="bg-indigo-50/30 p-4 rounded-xl border border-indigo-100/50 mb-3">
                                         <p class="text-xs text-slate-500 leading-relaxed italic whitespace-pre-wrap">"${e.description || 'Mission brief pending...'}"</p>
+                                        
+                                        ${e.event_flow && Array.isArray(e.event_flow) && e.event_flow.length > 0 ? `
+                                            <div class="mt-4 border-t border-indigo-100/50 pt-4">
+                                                <p class="text-[10px] font-black text-indigo-800 uppercase tracking-widest mb-2 flex items-center gap-2"><i data-lucide="layers" class="w-3 h-3 text-indigo-500"></i> Event Flow / Rounds</p>
+                                                <ul class="list-disc pl-4 space-y-1">
+                                                    ${e.event_flow.map(flow => `<li class="text-xs text-slate-600 font-medium">${flow}</li>`).join('')}
+                                                </ul>
+                                            </div>
+                                        ` : ''}
+
+                                        ${e.refreshments && Array.isArray(e.refreshments) && e.refreshments.length > 0 ? `
+                                            <div class="mt-4 border-t border-indigo-100/50 pt-4">
+                                                <p class="text-[10px] font-black text-indigo-800 uppercase tracking-widest mb-2 flex items-center gap-2"><i data-lucide="coffee" class="w-3 h-3 text-indigo-500"></i> Refreshments</p>
+                                                <div class="flex flex-wrap gap-2">
+                                                    ${e.refreshments.map(ref => `<span class="px-2 py-1 bg-white border border-indigo-100 shadow-sm rounded-md text-[10px] font-bold text-slate-600 uppercase tracking-tighter">${ref}</span>`).join('')}
+                                                </div>
+                                            </div>
+                                        ` : ''}
                                      </div>
                                 </div>
 
