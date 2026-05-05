@@ -834,8 +834,18 @@ def cancel_registration(current_user):
                 if int(reg['leader_id']) != student_id and int(reg['payer_id']) != student_id:
                     return jsonify({"error": "Unauthorized to cancel this registration"}), 403
                 
-                # Effectively 'deleting' it for the user by marking as archived/cancelled
-                cur.execute("UPDATE registrations SET status = 'cancelled' WHERE id = %s", (reg_id,))
+                if reg['status'] == 'approved':
+                    return jsonify({"error": "Confirmed missions cannot be cancelled via dashboard. Contact support for refunds."}), 400
+
+                # If already cancelled or if user explicitly wants to purge it
+                action = data.get('action', 'archive')
+                if action == 'delete' or reg['status'] == 'cancelled':
+                    cur.execute("DELETE FROM registrations WHERE id = %s", (reg_id,))
+                    msg = "Registration record removed"
+                else:
+                    cur.execute("UPDATE registrations SET status = 'cancelled' WHERE id = %s", (reg_id,))
+                    msg = "Registration cancelled successfully"
+
                 conn.commit()
-                return jsonify({"message": "Registration cancelled successfully"}), 200
+                return jsonify({"message": msg}), 200
     except Exception as e: return jsonify({"error": str(e)}), 500
