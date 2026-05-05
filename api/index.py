@@ -10,5 +10,10 @@ sys.path.append(backend_dir)
 # Now import the Flask app
 from backend.app import app
 
+# Add a direct health check for Vercel deployment verification
+@app.route('/api/vercel-health')
+def vercel_health():
+    return {"status": "healthy", "source": "api/index.py", "version": "1.0.2"}, 200
+
 # Vercel needs the 'app' object
 # The Flask app 'app' will be used to handle requests
