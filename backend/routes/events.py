@@ -293,7 +293,7 @@ def get_public_events():
         with DatabaseConnection() as conn:
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
                 cur.execute("""
-                    SELECT e.id, e.title, e.poster_url, e.start_date, h.name as hall_name, c.name as club_name
+                    SELECT e.id, e.title, e.poster_url, e.start_date, e.end_date, h.name as hall_name, c.name as club_name
                     FROM events e 
                     LEFT JOIN halls h ON e.hall_id = h.id
                     LEFT JOIN clubs c ON e.club_id = c.id
@@ -304,6 +304,7 @@ def get_public_events():
                 events = cur.fetchall()
                 for e in events:
                     if e['start_date']: e['start_date'] = e['start_date'].isoformat()
+                    if e['end_date']: e['end_date'] = e['end_date'].isoformat()
                 return jsonify(events), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
