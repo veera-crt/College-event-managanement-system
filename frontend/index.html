@@ -213,7 +213,8 @@
                         
                         if (eventsWithPosters.length > 0) {
                             let imagesHTML = '';
-                            eventsWithPosters.slice(0, 5).forEach((ev) => {
+                            const topEvents = eventsWithPosters.slice(0, 5);
+                            topEvents.forEach((ev, index) => {
                                 let badgeHtml = '';
                                 const now = new Date();
                                 const start = new Date(ev.start_date);
@@ -225,20 +226,36 @@
                                     badgeHtml = '<div class="absolute top-4 left-4 bg-indigo-500/90 backdrop-blur-sm text-white text-[9px] font-black px-3 py-1.5 rounded-full uppercase tracking-widest shadow-xl shadow-indigo-500/40 border border-indigo-400 z-20">UPCOMING</div>';
                                 }
 
-                                imagesHTML += `<div class="relative group h-[380px] w-[260px] shrink-0 overflow-hidden rounded-2xl shadow-lg border border-white/50 bg-gray-100 flex items-center justify-center">
-                                    ${badgeHtml}
-                                    <img src="${DriveUtils.getDriveDirectLink(ev.poster_url)}" class="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110" alt="${ev.title}">
-                                    <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-5 z-10">
-                                        <h4 class="text-white font-black text-lg leading-tight line-clamp-2 mb-1">${ev.title}</h4>
-                                        <p class="text-white/80 font-bold text-[10px] uppercase tracking-widest">${ev.club_name || 'Campus Event'}</p>
+                                imagesHTML += `<div class="carousel-slide absolute inset-0 flex items-center justify-center transition-opacity duration-1000 ${index === 0 ? 'opacity-100 z-10' : 'opacity-0 z-0 pointer-events-none'}">
+                                    <div class="relative group h-[400px] w-[280px] overflow-hidden rounded-3xl shadow-2xl border border-white/50 bg-gray-100 flex items-center justify-center transform transition-transform hover:scale-[1.02]">
+                                        ${badgeHtml}
+                                        <img src="${DriveUtils.getDriveDirectLink(ev.poster_url)}" class="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110" alt="${ev.title}">
+                                        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent flex flex-col justify-end p-6 z-10">
+                                            <h4 class="text-white font-black text-xl leading-tight line-clamp-2 mb-2 drop-shadow-md">${ev.title}</h4>
+                                            <p class="text-white/80 font-bold text-[10px] uppercase tracking-widest">${ev.club_name || 'Campus Event'}</p>
+                                        </div>
                                     </div>
                                 </div>`;
                             });
                             
-                            // Rebuild the marquee container with the fetched images
-                            container.innerHTML = `<div class="flex w-max animate-marquee items-center gap-6 px-6" id="heroMarquee">
-                                ${imagesHTML + imagesHTML}
+                            container.innerHTML = `<div class="relative w-full h-full min-h-[450px]">
+                                ${imagesHTML}
                             </div>`;
+                            
+                            // 6-second rotation carousel
+                            if (topEvents.length > 1) {
+                                let currentIndex = 0;
+                                const slides = container.querySelectorAll('.carousel-slide');
+                                setInterval(() => {
+                                    slides[currentIndex].classList.remove('opacity-100', 'z-10');
+                                    slides[currentIndex].classList.add('opacity-0', 'z-0', 'pointer-events-none');
+                                    
+                                    currentIndex = (currentIndex + 1) % slides.length;
+                                    
+                                    slides[currentIndex].classList.remove('opacity-0', 'z-0', 'pointer-events-none');
+                                    slides[currentIndex].classList.add('opacity-100', 'z-10');
+                                }, 6000);
+                            }
                         }
                         // If no posters, we do nothing. The HTML default beautiful state will remain.
                     }
