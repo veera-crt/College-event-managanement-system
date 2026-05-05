@@ -33,6 +33,16 @@
         .animate-in { animation: fadeIn 0.5s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
         body { font-family: 'Inter', sans-serif; }
+        @keyframes marquee {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+        .animate-marquee {
+            animation: marquee 25s linear infinite;
+        }
+        .animate-marquee:hover {
+            animation-play-state: paused;
+        }
     </style>
     <script>
         // Global Session Check: Auto-redirect logged-in users to their dashboard
@@ -92,8 +102,21 @@
             <div class="relative flex flex-col items-center justify-center p-8 lg:p-0">
                 <div class="absolute inset-0 z-0 bg-blue-100/50 blur-[120px]"></div>
                 <div class="relative z-10 w-full overflow-hidden rounded-[3rem] border-8 border-white bg-[#f8fafc] shadow-2xl group">
-                    <div class="flex min-h-[450px] items-center justify-center overflow-hidden">
-                        <img src="https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?w=1200" class="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110" alt="Collaboration">
+                    <div class="flex min-h-[450px] items-center overflow-hidden w-full relative" id="heroMarqueeContainer">
+                        <!-- Marquee Content -->
+                        <div class="flex w-max animate-marquee items-center gap-6 px-6" id="heroMarquee">
+                            <!-- JS will inject images here. We put placeholders just in case. -->
+                            <img src="https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=600" class="h-[380px] w-[260px] rounded-2xl object-cover shadow-lg" alt="Event Poster">
+                            <img src="https://images.unsplash.com/photo-1511512578047-dfb367046420?w=600" class="h-[380px] w-[260px] rounded-2xl object-cover shadow-lg" alt="Event Poster">
+                            <img src="https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=600" class="h-[380px] w-[260px] rounded-2xl object-cover shadow-lg" alt="Event Poster">
+                            <img src="https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?w=600" class="h-[380px] w-[260px] rounded-2xl object-cover shadow-lg" alt="Event Poster">
+                            
+                            <!-- Duplicated for seamless looping -->
+                            <img src="https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=600" class="h-[380px] w-[260px] rounded-2xl object-cover shadow-lg" alt="Event Poster">
+                            <img src="https://images.unsplash.com/photo-1511512578047-dfb367046420?w=600" class="h-[380px] w-[260px] rounded-2xl object-cover shadow-lg" alt="Event Poster">
+                            <img src="https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=600" class="h-[380px] w-[260px] rounded-2xl object-cover shadow-lg" alt="Event Poster">
+                            <img src="https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?w=600" class="h-[380px] w-[260px] rounded-2xl object-cover shadow-lg" alt="Event Poster">
+                        </div>
                     </div>
                 </div>
             </div>
@@ -149,14 +172,7 @@
                     </ul>
                 </div>
 
-                <div>
-                    <h4 class="text-lg font-bold mb-6">Newsletter</h4>
-                    <p class="text-gray-400 mb-6 text-sm">Stay updated with the latest events and campus announcements.</p>
-                    <div class="flex gap-2">
-                        <input type="email" placeholder="email@example.com" class="bg-white/10 border-0 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-white/20 flex-1">
-                        <button class="bg-white text-primary font-bold px-4 py-3 rounded-lg hover:bg-gray-100 transition-colors">Join</button>
-                    </div>
-                </div>
+                <!-- Newsletter section removed -->
             </div>
             <div class="pt-12 border-t border-white/10 text-center text-gray-500 text-sm mt-20">
                 <p>&copy; 2026 CampusHub - College Event Management System. All rights reserved.</p>
@@ -167,6 +183,46 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <script>
         lucide.createIcons();
+        
+        // Fetch real events and update marquee if available
+        async function loadPublicEvents() {
+            try {
+                const res = await fetch('/api/events/public');
+                if (res.ok) {
+                    const events = await res.json();
+                    if (events && events.length > 0) {
+                        const marquee = document.getElementById('heroMarquee');
+                        let imagesHTML = '';
+                        // Extract valid posters or use beautiful fallbacks
+                        const fallbacks = [
+                            "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=600",
+                            "https://images.unsplash.com/photo-1511512578047-dfb367046420?w=600",
+                            "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=600",
+                            "https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?w=600",
+                            "https://images.unsplash.com/photo-1523580494863-6f3031224c94?w=600"
+                        ];
+                        
+                        events.slice(0, 5).forEach((ev, idx) => {
+                            const src = ev.poster_url || fallbacks[idx % fallbacks.length];
+                            imagesHTML += `<div class="relative group h-[380px] w-[260px] shrink-0 overflow-hidden rounded-2xl shadow-lg border border-white/50">
+                                <img src="${src}" class="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110" alt="${ev.title}" onerror="this.src='${fallbacks[idx % fallbacks.length]}'">
+                                <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4">
+                                    <h4 class="text-white font-bold leading-tight line-clamp-2">${ev.title}</h4>
+                                    <p class="text-white/80 text-xs mt-1">${ev.club_name || 'Campus Event'}</p>
+                                </div>
+                            </div>`;
+                        });
+                        
+                        // Duplicate for seamless loop
+                        marquee.innerHTML = imagesHTML + imagesHTML;
+                    }
+                }
+            } catch (e) {
+                console.error("Failed to load public events:", e);
+            }
+        }
+        
+        loadPublicEvents();
     </script>
 </body>
 </html>

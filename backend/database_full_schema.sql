@@ -91,7 +91,8 @@ CREATE TABLE IF NOT EXISTS events (
     attendance_code VARCHAR(10),
     cert_folder_url TEXT,
     attendance_locked BOOLEAN DEFAULT FALSE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT chk_events_dates CHECK (start_date < end_date AND reg_deadline < start_date)
 );
 
 -- 5. REGISTRATIONS & TEAMS

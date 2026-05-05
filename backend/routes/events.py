@@ -82,15 +82,17 @@ def create_event(current_user):
             dt_reg = datetime.fromisoformat(reg_deadline.replace('Z', ''))
             
             if dt_start < now:
-                return jsonify({"error": "Start date cannot be in the past"}), 400
+                return jsonify({"error": "Start date cannot be in the past. Please select a valid future date."}), 400
             if dt_end <= dt_start:
-                return jsonify({"error": "End date must be after start date"}), 400
+                return jsonify({"error": "End date must be strictly after the start date. Please correct the event timings."}), 400
             if dt_reg >= dt_start:
-                return jsonify({"error": "Registration deadline must be before the event start date"}), 400
+                return jsonify({"error": "Registration deadline must be strictly before the event start date."}), 400
             if dt_reg < now:
-                return jsonify({"error": "Registration deadline cannot be in the past"}), 400
+                return jsonify({"error": "Registration deadline cannot be in the past."}), 400
+            if dt_end <= dt_reg:
+                return jsonify({"error": "End date cannot be before or equal to the registration deadline."}), 400
         except (ValueError, TypeError):
-            return jsonify({"error": "Invalid date format or missing dates"}), 400
+            return jsonify({"error": "Invalid date format provided. Please check all date fields."}), 400
 
         with DatabaseConnection() as conn:
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
@@ -138,7 +140,8 @@ def get_my_events(current_user):
 
                 cur.execute("""
                     SELECT e.*, h.name as hall_name, u.full_name as organizer_name, 
-                           u.organization_name as club_name, a.full_name as approved_by_name
+                           u.organization_name as club_name, a.full_name as approved_by_name,
+                           CASE WHEN e.end_date < (NOW() AT TIME ZONE 'UTC' + INTERVAL '5 hours 30 minutes') THEN true ELSE false END as is_past
                     FROM events e 
                     LEFT JOIN halls h ON e.hall_id = h.id
                     LEFT JOIN users u ON e.organizer_id = u.id
@@ -213,15 +216,17 @@ def update_event(current_user, event_id):
                     dt_reg = datetime.fromisoformat(reg_deadline.replace('Z', ''))
                     
                     if dt_start < now:
-                        return jsonify({"error": "Start date cannot be in the past"}), 400
+                        return jsonify({"error": "Start date cannot be in the past. Please select a valid future date."}), 400
                     if dt_end <= dt_start:
-                        return jsonify({"error": "End date must be after start date"}), 400
+                        return jsonify({"error": "End date must be strictly after the start date. Please correct the event timings."}), 400
                     if dt_reg >= dt_start:
-                        return jsonify({"error": "Registration deadline must be before the event start date"}), 400
+                        return jsonify({"error": "Registration deadline must be strictly before the event start date."}), 400
                     if dt_reg < now:
-                        return jsonify({"error": "Registration deadline cannot be in the past"}), 400
+                        return jsonify({"error": "Registration deadline cannot be in the past."}), 400
+                    if dt_end <= dt_reg:
+                        return jsonify({"error": "End date cannot be before or equal to the registration deadline."}), 400
                 except (ValueError, TypeError):
-                    return jsonify({"error": "Invalid date format or missing dates"}), 400
+                    return jsonify({"error": "Invalid date format provided. Please check all date fields."}), 400
 
                 import logging
                 logger = logging.getLogger(__name__)
@@ -258,7 +263,8 @@ def get_approved_events(current_user):
             with conn.cursor(cursor_factory=RealDictCursor) as cur:
                 cur.execute("""
                     SELECT e.*, h.name as hall_name, u.full_name as organizer_name, 
-                           u.organization_name as club_name, a.full_name as approved_by_name
+                           u.organization_name as club_name, a.full_name as approved_by_name,
+                           CASE WHEN e.end_date < (NOW() AT TIME ZONE 'UTC' + INTERVAL '5 hours 30 minutes') THEN true ELSE false END as is_past
                     FROM events e 
                     LEFT JOIN halls h ON e.hall_id = h.id
                     LEFT JOIN users u ON e.organizer_id = u.id
@@ -273,6 +279,28 @@ def get_approved_events(current_user):
                     if e['end_date']: e['end_date'] = e['end_date'].isoformat()
                     if e['reg_deadline']: e['reg_deadline'] = e['reg_deadline'].isoformat()
                     if e['created_at']: e['created_at'] = e['created_at'].isoformat()
+                return jsonify(events), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@events_bp.route('/public', methods=['GET'])
+def get_public_events():
+    """Fetch all approved upcoming events for the public landing page."""
+    try:
+        with DatabaseConnection() as conn:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute("""
+                    SELECT e.id, e.title, e.poster_url, e.start_date, h.name as hall_name, c.name as club_name
+                    FROM events e 
+                    LEFT JOIN halls h ON e.hall_id = h.id
+                    LEFT JOIN clubs c ON e.club_id = c.id
+                    WHERE e.status = 'approved' AND e.end_date >= (NOW() AT TIME ZONE 'UTC' + INTERVAL '5 hours 30 minutes')
+                    ORDER BY e.start_date ASC
+                    LIMIT 10
+                """)
+                events = cur.fetchall()
+                for e in events:
+                    if e['start_date']: e['start_date'] = e['start_date'].isoformat()
                 return jsonify(events), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
