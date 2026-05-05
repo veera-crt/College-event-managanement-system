@@ -125,7 +125,7 @@ def verify_college_email(current_user):
                     return jsonify({"error": "Invalid or expired verification code"}), 400
                 
                 # Check if this OTP belongs to THE current user
-                if int(record['payload']) != current_user['sub']:
+                if str(record['payload']) != str(current_user['sub']):
                     return jsonify({"error": "Security breach: OTP ownership mismatch"}), 403
                 
                 # Success: Update the users table
@@ -199,7 +199,7 @@ def verify_password_update(current_user):
                 if not record or record['otp_code'] != str(otp_submitted).strip():
                     return jsonify({"error": "Invalid or expired OTP"}), 400
                     
-                if int(record['payload']) != current_user['sub']:
+                if str(record['payload']) != str(current_user['sub']):
                     return jsonify({"error": "OTP ownership mismatch"}), 403
                     
                 password_hash = generate_password_hash(new_password)
