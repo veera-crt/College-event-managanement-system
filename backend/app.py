@@ -102,7 +102,7 @@ def serve_static(filename):
 
 @app.route('/api/health', methods=['GET'])
 def health_check():
-    return {"status": "healthy", "service": "CampusHub API Server"}, 200
+    return {"status": "healthy", "service": "CampusHub API Server", "version": "1.0.1-hardened"}, 200
 
 if __name__ == '__main__':
     # Force development mode on port 5005 (to avoid macOS AirPlay 5000 conflicts)
