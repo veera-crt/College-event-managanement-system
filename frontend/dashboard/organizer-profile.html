@@ -102,7 +102,43 @@
                             </div>
                         </div>
 
-                        <button type="submit" class="w-full py-5 bg-primary text-white rounded-2xl font-black text-lg hover:bg-secondary transition-all shadow-xl shadow-blue-900/20">
+                        <div class="mt-10 pt-8 border-t border-gray-100">
+                            <h3 class="text-xl font-black text-primary mb-6">Security Settings</h3>
+                            <div class="p-8 bg-slate-50 rounded-3xl border border-slate-100 space-y-6">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <p class="text-sm font-bold text-slate-800">Login Password</p>
+                                        <p class="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">Change your password via OTP verification</p>
+                                    </div>
+                                    <button type="button" id="initPasswordChangeBtn" onclick="initiatePasswordChange()" class="px-6 py-3 bg-white border border-slate-200 text-slate-600 font-bold text-sm rounded-xl shadow-sm hover:bg-slate-100 transition-all">
+                                        Change Password
+                                    </button>
+                                </div>
+                                
+                                <div id="passwordChangeForm" class="hidden pt-6 border-t border-slate-200">
+                                    <div class="space-y-6">
+                                        <div class="space-y-2">
+                                            <label class="text-xs font-black text-gray-400 uppercase tracking-widest">Verification Code (Sent to Primary Email)</label>
+                                            <input type="text" id="pwdOtp" maxlength="6" class="w-full bg-white border border-slate-200 rounded-xl px-4 py-4 text-center font-black tracking-[0.2em] text-primary focus:border-primary outline-none transition-all placeholder:text-gray-200 placeholder:tracking-normal">
+                                        </div>
+                                        <div class="space-y-2">
+                                            <label class="text-xs font-black text-gray-400 uppercase tracking-widest">New Password</label>
+                                            <input type="password" id="newPassword" class="w-full bg-white border border-slate-200 rounded-xl px-4 py-4 font-bold text-primary focus:border-primary outline-none transition-all">
+                                        </div>
+                                        <div class="flex gap-4 pt-2">
+                                            <button type="button" id="confirmPasswordChangeBtn" onclick="confirmPasswordChange()" class="flex-1 py-4 bg-red-50 text-red-600 hover:bg-red-500 hover:text-white rounded-xl font-black text-sm uppercase tracking-widest transition-all">
+                                                Update Password
+                                            </button>
+                                            <button type="button" onclick="cancelPasswordChange()" class="px-8 py-4 bg-white text-slate-400 font-bold text-sm rounded-xl border border-slate-200 hover:bg-slate-50 transition-all">
+                                                Cancel
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="w-full py-5 mt-8 bg-primary text-white rounded-2xl font-black text-lg hover:bg-secondary transition-all shadow-xl shadow-blue-900/20">
                             Update Organizer Portal
                         </button>
                     </form>
@@ -182,6 +218,67 @@
         function logout() {
             localStorage.clear();
             window.location.href = "../sign-in.html";
+        }
+
+        async function initiatePasswordChange() {
+            const btn = document.getElementById('initPasswordChangeBtn');
+            btn.innerHTML = "Sending OTP...";
+            btn.disabled = true;
+
+            try {
+                const res = await AuthGuard.secureFetch('/api/profile/send-password-otp', {
+                    method: 'POST'
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error);
+
+                document.getElementById('passwordChangeForm').classList.remove('hidden');
+                btn.innerHTML = "OTP Sent to Primary Email";
+            } catch (err) {
+                alert("Failed to initiate password change: " + err.message);
+                btn.innerHTML = "Change Password";
+                btn.disabled = false;
+            }
+        }
+
+        async function confirmPasswordChange() {
+            const otp = document.getElementById('pwdOtp').value;
+            const newPassword = document.getElementById('newPassword').value;
+
+            if (!otp || !newPassword) {
+                alert("Both OTP and new password are required.");
+                return;
+            }
+
+            const btn = document.getElementById('confirmPasswordChangeBtn');
+            btn.innerHTML = "Updating...";
+            btn.disabled = true;
+
+            try {
+                const res = await AuthGuard.secureFetch('/api/profile/verify-password', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ otp, new_password: newPassword })
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error);
+
+                alert("Password updated successfully! Please log in with your new password.");
+                AuthGuard.logout();
+            } catch (err) {
+                alert("Password update failed: " + err.message);
+                btn.innerHTML = "Update Password";
+                btn.disabled = false;
+            }
+        }
+
+        function cancelPasswordChange() {
+            document.getElementById('passwordChangeForm').classList.add('hidden');
+            document.getElementById('pwdOtp').value = '';
+            document.getElementById('newPassword').value = '';
+            const btn = document.getElementById('initPasswordChangeBtn');
+            btn.innerHTML = "Change Password";
+            btn.disabled = false;
         }
     </script>
 </body>

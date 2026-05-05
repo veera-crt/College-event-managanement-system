@@ -138,3 +138,76 @@ def verify_college_email(current_user):
                 return jsonify({"message": "College email verified and updated successfully!"}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+@profile_bp.route('/send-password-otp', methods=['POST'])
+@require_auth(['student', 'organizer', 'admin'])
+def send_password_otp(current_user):
+    """Send OTP to primary email to authorize password change."""
+    try:
+        with DatabaseConnection() as conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT email FROM users WHERE id = %s", (current_user['sub'],))
+                user = cur.fetchone()
+                if not user:
+                    return jsonify({"error": "User not found"}), 404
+                email = user[0]
+                
+        otp = str(random.randint(100000, 999999))
+        expires_at = datetime.utcnow() + timedelta(minutes=10)
+        
+        with DatabaseConnection() as conn:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    INSERT INTO otp_verifications (email, role, otp_code, payload, expires_at)
+                    VALUES (%s, %s, %s, %s, %s)
+                    ON CONFLICT (email, role) DO UPDATE 
+                    SET otp_code = EXCLUDED.otp_code, expires_at = EXCLUDED.expires_at, payload = EXCLUDED.payload
+                """, (email, 'PROFILE_PASSWORD_UPDATE', otp, str(current_user['sub']), expires_at))
+                conn.commit()
+                
+        email_sent = send_otp_email(email, otp)
+        return jsonify({"message": "Password reset OTP sent to your primary email", "status": email_sent}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@profile_bp.route('/verify-password', methods=['POST'])
+@require_auth(['student', 'organizer', 'admin'])
+def verify_password_update(current_user):
+    """Verify OTP and update password."""
+    data = request.json
+    otp_submitted = data.get('otp')
+    new_password = data.get('new_password')
+    
+    if not otp_submitted or not new_password:
+        return jsonify({"error": "OTP and new password are required"}), 400
+        
+    try:
+        from werkzeug.security import generate_password_hash
+        with DatabaseConnection() as conn:
+            with conn.cursor(cursor_factory=RealDictCursor) as cur:
+                cur.execute("SELECT email FROM users WHERE id = %s", (current_user['sub'],))
+                user = cur.fetchone()
+                if not user: return jsonify({"error": "User not found"}), 404
+                email = user['email']
+                
+                cur.execute("""
+                    SELECT * FROM otp_verifications 
+                    WHERE email = %s AND role = %s AND expires_at > %s
+                """, (email, 'PROFILE_PASSWORD_UPDATE', datetime.utcnow()))
+                record = cur.fetchone()
+                
+                if not record or record['otp_code'] != str(otp_submitted).strip():
+                    return jsonify({"error": "Invalid or expired OTP"}), 400
+                    
+                if int(record['payload']) != current_user['sub']:
+                    return jsonify({"error": "OTP ownership mismatch"}), 403
+                    
+                password_hash = generate_password_hash(new_password)
+                
+                cur.execute("UPDATE users SET password_hash = %s WHERE id = %s", (password_hash, current_user['sub']))
+                cur.execute("DELETE FROM otp_verifications WHERE id = %s", (record['id'],))
+                
+                conn.commit()
+                return jsonify({"message": "Password successfully updated"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
