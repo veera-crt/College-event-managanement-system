@@ -67,8 +67,18 @@ def finalize_free_registration(cur, reg_id, event_id, team_name, student_ids):
                 append_to_sheet(meta['master_gsheet_link'], meta['title'], meta['club_name'], meta['start_date'].isoformat(),
                                 p['full_name'], p['dob'], p['reg_no'], p['phone_number'], p['college_email'], p['college_email'],
                                 "FREE_REG", pay_dt, team_name)
-                generate_and_send_invoice(p['full_name'], [p['college_email']], meta['title'], meta['club_name'], 0, "FREE_REG", pay_dt,
-                                          reg_no=p['reg_no'], student_p_email=p['college_email'], payer_name="System", payer_reg_no="N/A")
+                from utils.invoice_generator import generate_and_send_event_ticket, send_combined_email
+                invoice_path = generate_and_send_invoice(p['full_name'], [p['college_email']], meta['title'], meta['club_name'], 0, "FREE_REG", pay_dt,
+                                          reg_no=p['reg_no'], student_p_email=p['college_email'], payer_name="System", payer_reg_no="N/A", send_email=False)
+                
+                cur.execute("SELECT name FROM halls WHERE id = %s", (meta['hall_id'],))
+                hall = cur.fetchone()
+                venue = hall['name'] if hall else "Venue Detail TBA"
+                
+                ticket_path = generate_and_send_event_ticket(p['full_name'], [p['college_email']], meta['title'], meta['club_name'], 0, "FREE_REG", meta['start_date'].isoformat() if meta['start_date'] else pay_dt,
+                                               p['reg_no'], venue, send_email=False)
+                
+                send_combined_email(p['full_name'], [p['college_email']], meta['title'], [ticket_path, invoice_path])
             except Exception as e: print(f"Automation error: {e}")
     # 4. Trigger Initial Reminders with Google Calendar Link
     try:
@@ -413,18 +423,33 @@ def verify_payment(current_user):
                              m['email'], m['college_email'], razorpay_payment_id, pay_datetime, reg['team_name']
                          )
                          # Send Invoice to EVERY Member (Both Emails)
-                         generate_and_send_invoice(
+                         from utils.invoice_generator import generate_and_send_event_ticket, send_combined_email
+                         
+                         invoice_path = generate_and_send_invoice(
                              m['full_name'], [m['email'], m['college_email']], reg['title'], reg['club_name'], 
                              reg['amount_paid'], # Show full mission cost for all teammates
                              razorpay_payment_id, pay_datetime,
                              reg_no=m['reg_no'], student_p_email=m['email'],
-                             payer_name=reg['full_name'], payer_reg_no=reg['reg_no']
+                             payer_name=reg['full_name'], payer_reg_no=reg['reg_no'],
+                             send_email=False
                          )
+
+                         cur.execute("SELECT name FROM halls WHERE id = %s", (reg['hall_id'],))
+                         hall = cur.fetchone()
+                         venue = hall['name'] if hall else "Venue Detail TBA"
+
+                         ticket_path = generate_and_send_event_ticket(
+                             m['full_name'], [m['email'], m['college_email']], reg['title'], reg['club_name'],
+                             reg['amount_paid'], razorpay_payment_id, reg['start_date'].isoformat() if reg['start_date'] else pay_datetime,
+                             m['reg_no'], venue, send_email=False
+                         )
+
+                         send_combined_email(
+                             m['full_name'], [m['email'], m['college_email']], reg['title'], [ticket_path, invoice_path]
+                         )
+
                          # 3. Send Initial Reminder with Google Calendar Link
                          try:
-                             cur.execute("SELECT name FROM halls WHERE id = %s", (reg['hall_id'],))
-                             hall = cur.fetchone()
-                             venue = hall['name'] if hall else "Venue Detail TBA"
                              gcal_link = get_gcal_link(reg['title'], reg['start_date'], reg['end_date'], venue, f"Join us for {reg['title']}")
                              send_reminder_email(m['college_email'], m['full_name'], reg['title'], 'initial', reg['start_date'], venue, gcal_link)
                              cur.execute("INSERT INTO reminders_sent (registration_id, student_id, reminder_type) VALUES (%s, %s, 'initial') ON CONFLICT DO NOTHING", (reg['id'], m['id'], 'initial'))

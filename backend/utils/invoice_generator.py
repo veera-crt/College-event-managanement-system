@@ -1,4 +1,5 @@
 import os
+from datetime import datetime
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -54,11 +55,21 @@ def generate_and_send_invoice(student_name, student_emails, event_name, club_nam
     elements.append(Spacer(1, 30))
 
     # Grid for Details
+    try:
+        if isinstance(date, str):
+            # Try to format the date if it's a string
+            dt_obj = datetime.fromisoformat(date.replace(' ', 'T'))
+            formatted_date = dt_obj.strftime("%d %b %Y, %I:%M %p")
+        else:
+            formatted_date = date.strftime("%d %b %Y, %I:%M %p")
+    except:
+        formatted_date = str(date)
+
     data = [
         ["INVOICE DETAILS", ""],
         ["Status:", "CONFIRMED"],
         ["Transaction ID:", payment_id],
-        ["Date of Issue:", date],
+        ["Date of Issue:", formatted_date],
         ["Event Title:", event_name],
         ["Organizing Club:", club_name],
         ["", ""],
@@ -81,38 +92,31 @@ def generate_and_send_invoice(student_name, student_emails, event_name, club_nam
     data.append(["TOTAL AMOUNT PAID", f"INR {amount}"])
 
     t = Table(data, colWidths=[150, 300])
-    t.setStyle(TableStyle([
+    
+    # Base Styles
+    table_styles = [
         ('FONTNAME', (0,0), (-1,-1), 'Helvetica'),
         ('FONTSIZE', (0,0), (-1,-1), 10),
         ('TEXTCOLOR', (0, 0), (0, -1), colors.grey),
         ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
         ('BOTTOMPADDING', (0,0), (-1,-1), 8),
-        # Section Headers
-        ('TEXTCOLOR', (0, 0), (1, 0), colors.white),
-        ('BACKGROUND', (0, 0), (1, 0), colors.HexColor('#1e3a8a')),
-        ('TEXTCOLOR', (0, 7), (1, 7), colors.white),
-        ('BACKGROUND', (0, 7), (1, 7), colors.HexColor('#1e3a8a')),
-    ]))
-    
-    # Special styling for Payer section if it exists
-    if payer_name:
-        t.setStyle(TableStyle([
-            ('TEXTCOLOR', (0, 11), (1, 11), colors.white),
-            ('BACKGROUND', (0, 11), (1, 11), colors.HexColor('#1e3a8a')),
-            # Final Amount Highlight
-            ('BACKGROUND', (0, -1), (1, -1), colors.HexColor('#f0f9ff')),
-            ('TEXTCOLOR', (1, -1), (1, -1), colors.HexColor('#1e3a8a')),
-            ('FONTSIZE', (0, -1), (1, -1), 12),
-            ('FONTNAME', (0, -1), (1, -1), 'Helvetica-Bold'),
-        ]))
-    else:
-        t.setStyle(TableStyle([
-            # Final Amount Highlight
-            ('BACKGROUND', (0, -1), (1, -1), colors.HexColor('#f0f9ff')),
-            ('TEXTCOLOR', (1, -1), (1, -1), colors.HexColor('#1e3a8a')),
-            ('FONTSIZE', (0, -1), (1, -1), 12),
-            ('FONTNAME', (0, -1), (1, -1), 'Helvetica-Bold'),
-        ]))
+        # Final Amount Highlight
+        ('BACKGROUND', (0, -1), (1, -1), colors.HexColor('#f0f9ff')),
+        ('TEXTCOLOR', (1, -1), (1, -1), colors.HexColor('#1e3a8a')),
+        ('FONTSIZE', (0, -1), (1, -1), 12),
+        ('FONTNAME', (0, -1), (1, -1), 'Helvetica-Bold'),
+    ]
+
+    # Dynamically find headers and style them
+    for i, row in enumerate(data):
+        if row[0] in ["INVOICE DETAILS", "RECIPIENT INFO", "PAYMENT ORIGIN"]:
+            table_styles.append(('TEXTCOLOR', (0, i), (1, i), colors.white))
+            table_styles.append(('BACKGROUND', (0, i), (1, i), colors.HexColor('#1e3a8a')))
+            table_styles.append(('FONTSIZE', (0, i), (1, i), 11))
+            table_styles.append(('TOPPADDING', (0, i), (1, i), 10))
+            table_styles.append(('BOTTOMPADDING', (0, i), (1, i), 10))
+
+    t.setStyle(TableStyle(table_styles))
 
     elements.append(t)
     elements.append(Spacer(1, 50))
@@ -212,12 +216,22 @@ def generate_and_send_cultural_ticket(student_name, student_emails, event_name, 
     elements.append(Paragraph(f"<font color='{cfg['primary']}' size=14><i>{cfg['text']}</i></font>", styles['Normal']))
     elements.append(Spacer(1, 40))
 
+    # 3. Format Date
+    try:
+        if isinstance(date, str):
+            dt_obj = datetime.fromisoformat(date.replace(' ', 'T'))
+            formatted_date = dt_obj.strftime("%d %b %Y, %I:%M %p")
+        else:
+            formatted_date = date.strftime("%d %b %Y, %I:%M %p")
+    except:
+        formatted_date = str(date)
+
     # Ticket Content
     data = [
         ["EVENT IDENTITY", event_name.upper()],
         ["HOSTED BY", club_name.upper()],
-        ["VENUE / STAGE", venue.upper()],
-        ["ADMISSION DATE", date],
+        ["VENUE / STAGE", venue.upper() if venue else "TBA"],
+        ["ADMISSION DATE", formatted_date],
         ["", ""],
         ["ATTENDEE NAME", student_name.upper()],
         ["REGISTRATION NO", reg_no],
@@ -300,4 +314,96 @@ def send_combined_email(student_name, emails, event_name, file_paths):
         server.send_message(msg)
         server.quit()
         print("Unified confirmation email sent.")
-    except Exception as e: print(f"Combined Email Failed: {e}")
+def generate_and_send_event_ticket(student_name, student_emails, event_name, club_name, amount, payment_id, date, reg_no, venue, send_email=True):
+    if isinstance(student_emails, str): emails = [student_emails]
+    else: emails = [e for e in student_emails if e and '@' in e]
+    
+    # Mission Theme Configuration
+    cfg = {'primary': '#1e3a8a', 'secondary': '#eff6ff', 'text': 'CampusHub Command Center'}
+    
+    if os.environ.get('VERCEL'):
+        invoices_dir = '/tmp'
+    else:
+        invoices_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'invoices')
+
+    os.makedirs(invoices_dir, exist_ok=True)
+    pdf_filename = f"MissionPass_{payment_id}_{reg_no}.pdf"
+    pdf_path = os.path.join(invoices_dir, pdf_filename)
+    
+    doc = SimpleDocTemplate(pdf_path, pagesize=letter)
+    styles = getSampleStyleSheet()
+    elements = []
+
+    # 1. Format Date
+    try:
+        if isinstance(date, str):
+            dt_obj = datetime.fromisoformat(date.replace(' ', 'T'))
+            formatted_date = dt_obj.strftime("%d %b %Y, %I:%M %p")
+        else:
+            formatted_date = date.strftime("%d %b %Y, %I:%M %p")
+    except:
+        formatted_date = str(date)
+
+    # 2. Generate QR Code
+    qr_data = f"MISSION ID: {payment_id}\nOBJECTIVE: {event_name}\nOPERATIVE: {student_name}\nREG NO: {reg_no}\nCOMMAND: {club_name}"
+    qr = qrcode.QRCode(version=1, box_size=10, border=5)
+    qr.add_data(qr_data)
+    qr.make(fit=True)
+    qr_img = qr.make_image(fill_color=cfg['primary'], back_color="white")
+    
+    img_byte_arr = io.BytesIO()
+    qr_img.save(img_byte_arr, format='PNG')
+    img_byte_arr.seek(0)
+    
+    qr_reportlab = Image(img_byte_arr, width=100, height=100)
+    qr_reportlab.hAlign = 'RIGHT'
+
+    # Header
+    header_data = [
+        [Paragraph(f"<font color='{cfg['primary']}' size=28><b>MISSION PASS</b></font><br/><font color='#64748b' size=10>LOG ID: {payment_id}</font>", styles['Heading1']), qr_reportlab]
+    ]
+    header_table = Table(header_data, colWidths=[350, 100])
+    header_table.setStyle(TableStyle([('VALIGN', (0,0), (-1,-1), 'BOTTOM')]))
+    
+    elements.append(header_table)
+    elements.append(Paragraph(f"<font color='{cfg['primary']}' size=14><i>{cfg['text']}</i></font>", styles['Normal']))
+    elements.append(Spacer(1, 40))
+
+    # Content
+    data = [
+        ["MISSION OBJECTIVE", event_name.upper()],
+        ["COMMANDING CLUB", club_name.upper()],
+        ["MISSION VENUE", venue.upper() if venue else "TBA"],
+        ["DEPLOYMENT DATE", formatted_date],
+        ["", ""],
+        ["OPERATIVE NAME", student_name.upper()],
+        ["REGISTRATION NO", reg_no],
+        ["CLEARANCE LEVEL", "PAID MISSION" if amount > 0 else "GUEST ACCESS"],
+        ["LOG ID", payment_id],
+        ["", ""],
+        ["FEES SETTLED", f"INR {amount}" if amount > 0 else "N/A (DIRECT ENTRY)"]
+    ]
+
+    t = Table(data, colWidths=[150, 300])
+    t.setStyle(TableStyle([
+        ('FONTNAME', (0,0), (-1,-1), 'Helvetica-Bold'),
+        ('FONTSIZE', (0,0), (-1,-1), 10),
+        ('TEXTCOLOR', (0, 0), (0, -1), colors.HexColor(cfg['primary'])),
+        ('TEXTCOLOR', (1, 0), (1, -1), colors.black),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 15),
+        ('TOPPADDING', (0,0), (-1,-1), 15),
+        ('LINEBELOW', (0,0), (-1,-1), 0.5, colors.HexColor('#e2e8f0')),
+        ('BACKGROUND', (0, 4), (1, 4), colors.white),
+        ('BACKGROUND', (0, 9), (1, 9), colors.white),
+    ]))
+    
+    elements.append(t)
+    elements.append(Spacer(1, 40))
+    elements.append(Paragraph(f"<font color='{cfg['primary']}' size=10><b>SECURITY CLEARANCE:</b> Please present this Mission Pass and your operative ID at the venue for verification. <b>One Pass per Student.</b></font>", styles['Normal']))
+    
+    doc.build(elements)
+
+    if not send_email: return pdf_path
+
+    # Emailing logic if needed (but we usually use send_combined_email)
+    return pdf_path
