@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="/js/auth-check.js"></script>
+    <script src="/js/utils.js"></script>
     <script>AuthGuard.requireGuest();</script>
     <title>CampusHub - College Event Management System</title>
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
@@ -214,7 +215,7 @@
                             let imagesHTML = '';
                             eventsWithPosters.slice(0, 5).forEach((ev) => {
                                 imagesHTML += `<div class="relative group h-[380px] w-[260px] shrink-0 overflow-hidden rounded-2xl shadow-lg border border-white/50 bg-gray-100 flex items-center justify-center">
-                                    <img src="${ev.poster_url}" class="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110" alt="${ev.title}">
+                                    <img src="${DriveUtils.getDriveDirectLink(ev.poster_url)}" class="h-full w-full object-cover transition-transform duration-700 group-hover:scale-110" alt="${ev.title}">
                                     <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4">
                                         <h4 class="text-white font-bold leading-tight line-clamp-2">${ev.title}</h4>
                                         <p class="text-white/80 text-xs mt-1">${ev.club_name || 'Campus Event'}</p>
