@@ -35,7 +35,7 @@ Full integration with **Razorpay** for paid events:
 - **UI/UX**: HTML5, CSS (Tailwind Engine), Vanilla JavaScript
 - **Deployment**: Optimized for Vercel / Production WSGI
 
----
+-----
 
 ## 📂 Project Structure & Module Map
 
